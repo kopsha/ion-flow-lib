@@ -1,14 +1,9 @@
 #ifndef IONFLOW_H
 #define IONFLOW_H
 
-#include <string>
+#include <string_view>
 
-/**
- * Basic greeting function to demonstrate library usage.
- *
- * @return A greeting string.
- */
-std::string getGreeting();
+std::string_view getGreeting();
+int max(int a, int b);
 
 #endif // IONFLOW_H
-

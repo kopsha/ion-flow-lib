@@ -1,6 +1,12 @@
 #include "ionflow/ionflow.h"
+#include <string_view>
 
-std::string getGreeting() {
+std::string_view getGreeting()
+{
     return "Hello, Ions are flowing!";
 }
 
+int max(int a, int b)
+{
+    return (a > b) ? a : b;
+}
