@@ -9,7 +9,7 @@ VERSION=${VERSION:-$VERSION_TAG}
 build()
 {
     mkdir -p build
-    cmake -S . -B ./build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+    cmake -S . -B ./build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_EXAMPLES=ON
     cmake --build ./build -- -j$(nproc)
 }
 
@@ -25,6 +25,10 @@ main()
     case $1 in
         build)
             build
+            ;;
+        xxx)
+            build
+            ./build/hello_ion
             ;;
         clean)
             printf "Wiping ./build folder completely.\n"
