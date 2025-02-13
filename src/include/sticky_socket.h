@@ -1,10 +1,11 @@
 #ifndef STICKY_SOCKET_H
 #define STICKY_SOCKET_H
 
-#include "rc_limits.h"
 #include <netdb.h>
 #include <span>
 #include <string>
+
+static constexpr size_t BUFFER_SIZE = 1024;
 
 /***
  * Once connected it sticks, at least until retry limit was reached
@@ -21,7 +22,7 @@ public:
     void disconnect();
     ConnectionState eval(const struct pollfd& response);
 
-    void send(const std::span<const byte> buffer);
+    void send(const std::span<const std::byte> buffer);
 
     const std::string& getHost() const;
     const std::string& getStatus() const;
@@ -30,10 +31,10 @@ public:
 
     virtual void wentOnline();
     virtual void wentOffline();
-    virtual void didReceived(const std::span<byte> buffer);
+    virtual void didReceived(const std::span<std::byte> buffer);
 
 private:
-    std::span<byte> receive();
+    std::span<std::byte> receive();
     void reconnect();
     bool open();
     void close();
@@ -50,7 +51,7 @@ private:
     int maxRetries;
     int attempts;
     int backOff;
-    byte rxBuffer[BUFFER_SIZE];
+    std::byte rxBuffer[BUFFER_SIZE];
 };
 
 #endif // !STICKY_SOCKET_H

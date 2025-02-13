@@ -213,7 +213,7 @@ StickySocket::ConnectionState StickySocket::eval(const struct pollfd& response)
     return ConnectionState::None;
 }
 
-void StickySocket::send(const std::span<const byte> buffer)
+void StickySocket::send(const std::span<const std::byte> buffer)
 {
     if (status != ConnectionState::Connected) {
         log_warning("%s cannot send anything, is not connected.\n", host.c_str());
@@ -227,23 +227,23 @@ void StickySocket::send(const std::span<const byte> buffer)
     }
 }
 
-std::span<byte> StickySocket::receive()
+std::span<std::byte> StickySocket::receive()
 {
     if (status != ConnectionState::Connected) {
         log_warning("%s cannot receive anything, is not connected.\n", host.c_str());
-        return std::span<byte>();
+        return std::span<std::byte>();
     }
 
     size_t bytes = ::recv(descriptor, rxBuffer, BUFFER_SIZE, 0);
     if (bytes < 0) {
         log_error("%s receive failed.\n");
-        return std::span<byte>();
+        return std::span<std::byte>();
     } else if (bytes == 0) {
         log_error("%s connection maybe lost.\n");
-        return std::span<byte>();
+        return std::span<std::byte>();
     }
 
-    return std::span<byte>(rxBuffer, bytes);
+    return std::span<std::byte>(rxBuffer, bytes);
 }
 
 bool StickySocket::isAlive() const { return status != ConnectionState::Disconnected; }
@@ -279,4 +279,4 @@ void StickySocket::wentOnline() { log_debug("%s is online.\n", host.c_str()); }
 
 void StickySocket::wentOffline() { log_debug("%s is offline.\n", host.c_str()); }
 
-void StickySocket::didReceived(const std::span<byte> buffer) { log_buffer(host, buffer); }
+void StickySocket::didReceived(const std::span<std::byte> buffer) { log_buffer(host, buffer); }
