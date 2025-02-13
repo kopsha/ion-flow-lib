@@ -1,4 +1,4 @@
-#include "ionflow/ionflow.h"
+#include "ionflow.h"
 #include <string_view>
 
 std::string_view getGreeting()
