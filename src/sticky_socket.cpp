@@ -3,7 +3,6 @@
 #include "sticky_socket.h"
 
 #include <cstring>
-#include <stdexcept>
 #include <string>
 
 #include <arpa/inet.h>
@@ -13,11 +12,21 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+namespace {
 constexpr int INVALID_SOCKET = -1;
 
-StickySocket::StickySocket(const std::string& host, int port, const int retries)
+auto setSocketNonBlocking(int socket_fd) -> bool
+{
+    // WARNING: this may fail, check if flags are positive someday
+    int flags = fcntl(socket_fd, F_GETFL, 0);
+    auto err = fcntl(socket_fd, F_SETFL, flags | O_NONBLOCK);
+    return err == 0;
+}
+} // anonymous namespace
+
+StickySocket::StickySocket(std::string host, int port, const int retries)
     : descriptor { INVALID_SOCKET }
-    , host { host }
+    , host { std::move(host) }
     , port { std::to_string(port) }
     , maxRetries(retries)
     , attempts(0)
@@ -25,16 +34,16 @@ StickySocket::StickySocket(const std::string& host, int port, const int retries)
     , status(ConnectionState::Disconnected)
     , online(false)
 {
-    std::memset(rxBuffer, 0, sizeof(rxBuffer));
-    open();
+    rxBuffer.fill(std::byte { 0 });
+    /*open(); // why?*/
 }
 
 StickySocket::~StickySocket() { disconnect(); }
 
-bool StickySocket::open()
+auto StickySocket::open() -> bool
 {
     if (descriptor != INVALID_SOCKET) {
-        /*log_debug("open discarded, socket already connecting %s\n", host.c_str());*/
+        log_debug("socket open discarded, socket already connecting %s\n", host.c_str());
         return true;
     }
 
@@ -45,15 +54,15 @@ bool StickySocket::open()
     // Request address info
     hints.ai_family = AF_INET; // IPv4
     hints.ai_socktype = SOCK_STREAM; // TCP
-    int rc = getaddrinfo(host.c_str(), port.c_str(), &hints, &results);
-    if (rc != 0) {
-        log_error("Cannot resolve %s, reason: %s", host.c_str(), gai_strerror(rc));
+    int err = getaddrinfo(host.c_str(), port.c_str(), &hints, &results);
+    if (err != 0) {
+        log_error("Cannot resolve %s, reason: %s", host.c_str(), gai_strerror(err));
         descriptor = INVALID_SOCKET;
         return false;
     }
 
     // Find the first valid socket with requested addr info
-    for (const auto* result = results; result; result = result->ai_next) {
+    for (const auto* result = results; result != nullptr; result = result->ai_next) {
         descriptor = ::socket(result->ai_family, result->ai_socktype, result->ai_protocol);
         if (descriptor == INVALID_SOCKET) {
             continue; // Try the next address
@@ -67,19 +76,18 @@ bool StickySocket::open()
         }
 
         // Initiate the connection (non-blocking)
-        rc = ::connect(descriptor, result->ai_addr, result->ai_addrlen);
-        if (rc < 0) {
+        err = ::connect(descriptor, result->ai_addr, result->ai_addrlen);
+        if (err < 0) {
             if (errno == EINPROGRESS) {
                 // Connection is in progress, which is expected for non-blocking sockets
                 break;
-            } else {
-                // Other connection error
-                log_error("Connection failed: %s", std::strerror(errno));
-                ::close(descriptor);
-                descriptor = INVALID_SOCKET;
-                continue; // Try the next address
             }
-        } else if (rc == 0) {
+
+            // Other connection error
+            log_error("Connection failed: %s", std::strerror(errno));
+            ::close(descriptor);
+            descriptor = INVALID_SOCKET;
+        } else if (err == 0) {
             // Connection succeeded immediately (unlikely for non-blocking sockets)
             break;
         }
@@ -87,7 +95,6 @@ bool StickySocket::open()
 
     freeaddrinfo(results);
 
-    /*log_debug("open returns %d\n", descriptor != INVALID_SOCKET);*/
     return descriptor != INVALID_SOCKET;
 }
 
@@ -99,7 +106,7 @@ void StickySocket::close()
 
 void StickySocket::connect()
 {
-    /*log_debug("connect call %s\n", host.c_str());*/
+    log_debug("connect call %s\n", host.c_str());
     if (status != ConnectionState::Disconnected) {
         log_warning("%s connection is already in progress.\n", host.c_str());
         return;
@@ -110,10 +117,11 @@ void StickySocket::connect()
 
 void StickySocket::reconnect()
 {
+    log_debug(" -> reconnect() on %s\n", host.c_str());
     attempts++;
     if (open()) {
         enter(ConnectionState::Connecting);
-        /*log_debug("%s is %s\n", host.c_str(), getStatus().c_str());*/
+        log_debug("%s is %s\n", host.c_str(), getStatus().c_str());
     } else {
         if (attempts >= maxRetries) {
             log_warning("%s reached its retry limit.\n", host.c_str());
@@ -142,7 +150,7 @@ void StickySocket::enter(ConnectionState newState)
     case ConnectionState::Retry:
         online = false;
         close();
-        backOff = (1 << (attempts + 1)) * 100;
+        backOff = (1 << (attempts + 1)) * BACKOFF_MULTIPLIER;
         break;
     case ConnectionState::Connecting:
         online = false;
@@ -165,8 +173,9 @@ void StickySocket::enter(ConnectionState newState)
     }
 }
 
-StickySocket::ConnectionState StickySocket::eval(const struct pollfd& response)
+auto StickySocket::eval(const struct pollfd& response) -> ConnectionState
 {
+    // TODO: refactor this
     if (status == ConnectionState::Disconnected) {
         log_error("%s should not evaluate poll for disconnected socket.\n", host.c_str());
         return ConnectionState::None;
@@ -175,6 +184,7 @@ StickySocket::ConnectionState StickySocket::eval(const struct pollfd& response)
     ConnectionState lastStatus = status;
     int lastAttempts = attempts;
 
+    // NOLINTBEGIN(readability-implicit-bool-conversion)
     if (response.revents & (POLLNVAL | POLLERR | POLLHUP)) {
         if (status == ConnectionState::Connecting) {
             if (attempts >= maxRetries) {
@@ -182,6 +192,7 @@ StickySocket::ConnectionState StickySocket::eval(const struct pollfd& response)
                 enter(ConnectionState::Disconnected);
             } else {
                 enter(ConnectionState::Retry);
+                log_debug("%s from Connecting to %s\n", host.c_str(), getStatus().c_str());
             }
         } else if (status == ConnectionState::Retry) {
             if (backOff) {
@@ -196,6 +207,7 @@ StickySocket::ConnectionState StickySocket::eval(const struct pollfd& response)
             if (data.size() == 0) {
                 attempts = 0;
                 enter(ConnectionState::Retry);
+                log_debug("%s from Connected to %s\n", host.c_str(), getStatus().c_str());
             } else {
                 didReceived(data);
             }
@@ -207,6 +219,8 @@ StickySocket::ConnectionState StickySocket::eval(const struct pollfd& response)
     } else {
         // nothing happened...
     }
+    // NOLINTEND(readability-implicit-bool-conversion)
+
     if (status != lastStatus || attempts != lastAttempts) {
         return status;
     }
@@ -224,52 +238,58 @@ void StickySocket::send(const std::span<const std::byte> buffer)
     size_t bytes = ::send(descriptor, buffer.data(), buffer.size(), 0);
     if (bytes < 0) {
         log_error("Failed to send to %s.\n", host.c_str());
+    } else {
+        log_buffer("<<" + host + "<<", buffer);
     }
 }
 
-std::span<std::byte> StickySocket::receive()
+auto StickySocket::receive() -> std::span<std::byte>
 {
     if (status != ConnectionState::Connected) {
         log_warning("%s cannot receive anything, is not connected.\n", host.c_str());
-        return std::span<std::byte>();
+        return std::span<std::byte> {};
     }
 
-    size_t bytes = ::recv(descriptor, rxBuffer, BUFFER_SIZE, 0);
+    size_t bytes = ::recv(descriptor, rxBuffer.data(), rxBuffer.size(), 0);
     if (bytes < 0) {
         log_error("%s receive failed.\n");
-        return std::span<std::byte>();
-    } else if (bytes == 0) {
+        return std::span<std::byte> {};
+    }
+    if (bytes == 0) {
         log_error("%s connection maybe lost.\n");
-        return std::span<std::byte>();
+        return std::span<std::byte> {};
     }
 
-    return std::span<std::byte>(rxBuffer, bytes);
+    return std::span<std::byte> { rxBuffer.data(), bytes };
 }
 
-bool StickySocket::isAlive() const { return status != ConnectionState::Disconnected; }
+auto StickySocket::isAlive() const -> bool
+{
+    return status != ConnectionState::Disconnected;
+}
 
-int StickySocket::getDescriptor() const { return descriptor; }
+auto StickySocket::getDescriptor() const -> int { return descriptor; }
 
-const std::string& StickySocket::getHost() const { return host; }
+auto StickySocket::getHost() const -> const std::string& { return host; }
 
-const std::string& StickySocket::getStatus() const
+auto StickySocket::getStatus() const -> const std::string&
 {
     static std::string textual;
     switch (status) {
+    case ConnectionState::None:
+        textual = "None";
+        break;
     case ConnectionState::Disconnected:
         textual = "Disconnected";
         break;
     case ConnectionState::Connecting:
         textual = "Connecting";
         break;
-    case ConnectionState::Retry:
-        textual = "Retry" + std::to_string(attempts);
-        break;
     case ConnectionState::Connected:
         textual = "Connected";
         break;
-    case ConnectionState::None:
-        textual = "None";
+    case ConnectionState::Retry:
+        textual = "Retry" + std::to_string(attempts);
         break;
     }
     return textual;
@@ -279,4 +299,7 @@ void StickySocket::wentOnline() { log_debug("%s is online.\n", host.c_str()); }
 
 void StickySocket::wentOffline() { log_debug("%s is offline.\n", host.c_str()); }
 
-void StickySocket::didReceived(const std::span<std::byte> buffer) { log_buffer(host, buffer); }
+void StickySocket::didReceived(const std::span<std::byte> buffer)
+{
+    log_buffer(">>" + host + ">>", buffer);
+}

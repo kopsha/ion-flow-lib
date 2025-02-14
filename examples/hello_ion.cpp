@@ -1,50 +1,74 @@
-#include "sticky_socket.h"
-#include <iostream>
 #include <poll.h>
-#include <span>
 
-int main()
+#include "ion_service.h"
+#include "logs.h"
+
+#include <atomic>
+#include <chrono>
+#include <csignal>
+#include <exception>
+#include <thread>
+
+namespace {
+
+constexpr int SUPERVISOR_CYCLE = 233;
+std::atomic<bool> pleaseStop { false };
+
+void signalHandler(int signal)
 {
-    struct {
-        std::string name;
-        std::string host;
-        int port;
-    } conn = { "x", "localhost", 5000 };
-    StickySocket ss(conn.host, conn.port);
-    std::cout << "before connect" << conn.host << std::endl;
-    ss.open();
-    std::cout << "connecting" << conn.host << std::endl;
+    if (signal == SIGINT || signal == SIGTERM) {
+        log_info("Stop signal received (%d)\n", signal);
+        pleaseStop = true;
+    }
+}
 
-    int rc;
-    StickySocket::ConnectionState ev, last;
-    std::span<std::byte> data;
-
-    while (true) {
-        struct pollfd pfds[]
-            = { { .fd = ss.getDescriptor(), .events = POLLIN | POLLPRI | POLLOUT } };
-        rc = poll(pfds, 1, 8);
-        if (rc > 0) {
-            ev = ss.eval(pfds[0]);
-            if (ev != last) {
-                last = ev;
-                switch (ev) {
-                case StickySocket::ConnectionState::Connected:
-                    std::cout << "Connected" << std::endl;
-                    break;
-                case StickySocket::ConnectionState:::
-                    data = ss.receive();
-                    std::cout << "Received " << data.size() << " bytes: " << data.data()
-                              << std::endl;
-                    break;
-                case StickySocket::Event::Failed:
-                    ss.close();
-                    std::cout << "Closed" << std::endl;
-                    break;
-                default:
-                    break;
-                }
-            }
+void supervisor(IonService& agent)
+{
+    while (agent.isRunning() && !pleaseStop) {
+        std::this_thread::sleep_for(std::chrono::seconds(3));
+        if (!agent.isHealthy()) {
+            log_warning("Service appears unresponsive. Restarting...\n");
+            agent.stop();
+            agent.start();
+        } else {
+            agent.resetHealth();
         }
     }
+}
+}
+
+auto main() -> int
+{
+    log_info("Starting service and supervisor threads...\n");
+    IonService agent;
+
+    // enter supervisor context
+    auto prevIntH = std::signal(SIGINT, signalHandler);
+    auto prevTermH = std::signal(SIGTERM, signalHandler);
+    std::thread runner(supervisor, std::ref(agent));
+
+    try {
+        agent.start(); // as a separate thread
+
+        while (!pleaseStop && agent.isRunning()) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(SUPERVISOR_CYCLE));
+        }
+
+        if (agent.isRunning()) {
+            agent.stop();
+        }
+    } catch (const std::exception& err) {
+        log_error(
+            "FATALITY: Something horrible happened: %s %s\n", typeid(err).name(),
+            err.what()
+        );
+    }
+
+    // exit supervisor context
+    runner.join();
+    (void)std::signal(SIGINT, prevIntH);
+    (void)std::signal(SIGTERM, prevTermH);
+
+    log_info("Service and monitor closed gracefully.\n");
     return 0;
 }

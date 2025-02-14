@@ -1,0 +1,13 @@
+---
+Checks: >
+    -*,
+    clang-analyzer-*,
+    modernize-*,
+    readability-*,
+    performance-*,
+    bugprone-*,
+    cert-*,
+    misc-*
+WarningsAsErrors: '*'
+HeaderFilterRegex: '^src/'
+FormatStyle: none

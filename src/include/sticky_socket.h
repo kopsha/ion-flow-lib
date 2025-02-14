@@ -1,57 +1,68 @@
 #ifndef STICKY_SOCKET_H
 #define STICKY_SOCKET_H
 
-#include <netdb.h>
+#include "ionflow.h"
+
+#include <cstdint>
 #include <span>
 #include <string>
-
-static constexpr size_t BUFFER_SIZE = 1024;
 
 /***
  * Once connected it sticks, at least until retry limit was reached
  */
 class StickySocket {
 public:
-    enum class ConnectionState { Disconnected, Connecting, Retry, Connected, None };
+    // numbers and types
+    static constexpr size_t DEFAULT_RETRIES = 5;
+    static constexpr int BACKOFF_MULTIPLIER = 233;
+    enum class ConnectionState : uint_fast8_t {
+        None,
+        Disconnected,
+        Connecting,
+        Retry,
+        Connected
+    };
 
-public:
-    StickySocket(const std::string& host, int port, const int retries = 5);
+    // you know
+    StickySocket(std::string host, int port, int retries = DEFAULT_RETRIES);
     ~StickySocket();
 
+    // actions
     void connect();
     void disconnect();
-    ConnectionState eval(const struct pollfd& response);
+    auto eval(const struct pollfd& response) -> ConnectionState;
+    void send(std::span<const std::byte> buffer);
 
-    void send(const std::span<const std::byte> buffer);
+    // inspectors
+    [[nodiscard]] auto getHost() const -> const std::string&;
+    [[nodiscard]] auto getStatus() const -> const std::string&;
+    [[nodiscard]] auto getDescriptor() const -> int;
+    [[nodiscard]] auto isAlive() const -> bool;
+    [[nodiscard]] auto isOnline() const -> bool;
 
-    const std::string& getHost() const;
-    const std::string& getStatus() const;
-    int getDescriptor() const;
-    bool isAlive() const;
-
+    // notifications
     virtual void wentOnline();
     virtual void wentOffline();
-    virtual void didReceived(const std::span<std::byte> buffer);
+    virtual void didReceived(std::span<std::byte> buffer);
+
 
 private:
-    std::span<std::byte> receive();
+    auto receive() -> std::span<std::byte>;
     void reconnect();
-    bool open();
+    auto open() -> bool;
     void close();
     void enter(ConnectionState newState);
 
-protected:
-    bool online;
-
-private:
+    // members
     int descriptor;
     ConnectionState status;
+    bool online;
     std::string host;
     std::string port;
     int maxRetries;
     int attempts;
     int backOff;
-    std::byte rxBuffer[BUFFER_SIZE];
+    std::array<std::byte, BUFFER_SIZE> rxBuffer;
 };
 
 #endif // !STICKY_SOCKET_H

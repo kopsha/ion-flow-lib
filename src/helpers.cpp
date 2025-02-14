@@ -1,7 +1,10 @@
 #include "helpers.h"
 #include "logs.h"
 
+#include <array>
+#include <bitset>
 #include <climits>
+#include <cstdint>
 #include <cstring>
 #include <iomanip>
 #include <sstream>
@@ -11,85 +14,79 @@
 #include <fcntl.h>
 #include <net/if.h>
 #include <netdb.h>
+#include <poll.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-
-const std::string get_hostname()
+auto get_hostname() -> std::string
 {
-    char hostname[HOST_NAME_MAX + 1];
+    std::array<char, HOST_NAME_MAX + 1> hostname;
 
-    int rc = gethostname(hostname, HOST_NAME_MAX);
-    if (rc < 0) {
-        throw std::runtime_error("Failed to read hostname.");
+    int err = gethostname(hostname.data(), HOST_NAME_MAX);
+    if (err < 0) {
+        return std::move(std::string());
     }
     hostname[HOST_NAME_MAX] = '\0';
 
-    return std::string(hostname);
+    return std::move(std::string(hostname.data()));
 }
 
-const std::string get_mac_address()
+auto get_mac_address() -> std::string
 {
     std::stringstream builder;
     struct ifreq ifr;
 
-    int fd = socket(AF_INET, SOCK_DGRAM, 0);
-    if (fd < 0) {
-        throw std::runtime_error("Failed to read mac address.");
+    int descriptor = socket(AF_INET, SOCK_DGRAM, 0);
+    if (descriptor < 0) {
+        return std::move(std::string());
     }
 
     // TODO: consider listing all network interfaces
     std::strncpy(ifr.ifr_name, "eno1", IFNAMSIZ - 1);
-    if (ioctl(fd, SIOCGIFHWADDR, &ifr) == 0) {
-        unsigned char* hwaddr = (unsigned char*)ifr.ifr_hwaddr.sa_data;
+    if (ioctl(descriptor, SIOCGIFHWADDR, &ifr) == 0) {
+        auto* hwaddr = (unsigned char*)ifr.ifr_hwaddr.sa_data;
         builder << std::hex << std::setfill('0') << std::setw(2)
                 << static_cast<int>(hwaddr[0]) << ":" << std::setw(2)
                 << static_cast<int>(hwaddr[1]) << ":" << std::setw(2)
                 << static_cast<int>(hwaddr[2]) << ":" << std::setw(2)
                 << static_cast<int>(hwaddr[3]) << ":" << std::setw(2)
                 << static_cast<int>(hwaddr[4]) << ":" << std::setw(2)
-                << static_cast<int>(hwaddr[5]);
+                << static_cast<int>(hwaddr[5]); // NOLINT(anything else will look worse)
     }
-    close(fd);
+    close(descriptor);
 
-    return builder.str();
+    return std::move(builder.str());
 }
 
-bool setSocketNonBlocking(int socket_fd)
+auto sockaddr_as_string(const struct sockaddr* addr) -> std::string
 {
-    // WARNING: this may fail, check if flags are positive someday
-    int flags = fcntl(socket_fd, F_GETFL, 0);
-    int rc = fcntl(socket_fd, F_SETFL, flags | O_NONBLOCK);
-    return rc == 0;
-}
-
-std::string sockaddr_as_string(const struct sockaddr* addr)
-{
-    char ip_str[INET6_ADDRSTRLEN];
+    std::array<char, INET6_ADDRSTRLEN> ip_str;
 
     if (addr->sa_family == AF_INET) {
         // IPv4 address
-        struct sockaddr_in* ipv4 = (struct sockaddr_in*)addr;
-        inet_ntop(AF_INET, &(ipv4->sin_addr), ip_str, sizeof(ip_str));
-        return std::string(ip_str);
-    } else if (addr->sa_family == AF_INET6) {
-        // IPv6 address
-        struct sockaddr_in6* ipv6 = (struct sockaddr_in6*)addr;
-        inet_ntop(AF_INET6, &(ipv6->sin6_addr), ip_str, sizeof(ip_str));
-        return std::string(ip_str);
-    } else {
-        return "Unknown address family";
+        auto* ipv4 = (struct sockaddr_in*)addr;
+        inet_ntop(AF_INET, &(ipv4->sin_addr), ip_str.data(), sizeof(ip_str));
+        return std::move(std::string { ip_str.data() });
     }
+
+    if (addr->sa_family == AF_INET6) {
+        // IPv6 address
+        auto* ipv6 = (struct sockaddr_in6*)addr;
+        inet_ntop(AF_INET6, &(ipv6->sin6_addr), ip_str.data(), ip_str.size());
+        return std::move(std::string { ip_str.data() });
+    }
+
+    return std::move(std::string { "Unknown address family" });
 }
 
-void print_addrinfo(const struct addrinfo* info)
+void log_addrinfo(const struct addrinfo* info)
 {
     while (info != nullptr) {
         log_debug("Flags: %d\n", info->ai_flags);
         log_debug(
             "Family: %d (%s)\n", info->ai_family,
             (info->ai_family == AF_INET        ? "IPv4"
-                 : info->ai_family == AF_INET6 ? "IPv6"
+                 : info->ai_family == AF_INET6 ? "IPv6" // NOLINT(i know this sucks)
                                                : "Other")
         );
         log_debug("Socket Type: %d\n", info->ai_socktype);
@@ -98,12 +95,42 @@ void print_addrinfo(const struct addrinfo* info)
 
         log_debug(
             "Address: %s\n",
-            (info->ai_addr) ? sockaddr_as_string(info->ai_addr).c_str() : "(null)"
+            (info->ai_addr != nullptr) ? sockaddr_as_string(info->ai_addr).c_str()
+                                       : "(null)"
         );
         log_debug(
-            "Canonical Name: %s\n", (info->ai_canonname) ? info->ai_canonname : "(null)"
+            "Canonical Name: %s\n",
+            (info->ai_canonname != nullptr) ? info->ai_canonname : "(null)"
         );
         log_debug("----------------------------------\n");
         info = info->ai_next;
     }
+}
+
+void log_revents(short int revents)
+{
+    log_debug(
+        "Revents (0b%s):\n", std::bitset<sizeof(revents) * 2>(revents).to_string().c_str()
+    );
+
+    // NOLINTBEGIN(readability-implicit-bool-conversion)
+    if (revents & POLLIN) {
+        log_debug("  POLLIN: Data to read\n");
+    }
+    if (revents & POLLPRI) {
+        log_debug("  POLLPRI: Urgent data to read\n");
+    }
+    if (revents & POLLOUT) {
+        log_debug("  POLLOUT: Ready for output\n");
+    }
+    if (revents & POLLERR) {
+        log_debug("  POLLERR: Error condition\n");
+    }
+    if (revents & POLLHUP) {
+        log_debug("  POLLHUP: Hang up\n");
+    }
+    if (revents & POLLNVAL) {
+        log_debug("  POLLNAL: Invalid request\n");
+    }
+    // NOLINTEND(readability-implicit-bool-conversion)
 }

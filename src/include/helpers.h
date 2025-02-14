@@ -3,11 +3,12 @@
 
 #include <string>
 
-const std::string get_hostname();
-const std::string get_mac_address();
+auto get_hostname() -> std::string;
+auto get_mac_address() -> std::string;
 
-bool setSocketNonBlocking(int socket_fd);
-std::string sockaddr_as_string(const struct sockaddr* addr);
-void print_addrinfo(const struct addrinfo* info);
+
+auto sockaddr_as_string(const struct sockaddr* addr) -> std::string;
+void log_addrinfo(const struct addrinfo* info);
+void log_revents(short int revents);
 
 #endif // !HELPERS_H

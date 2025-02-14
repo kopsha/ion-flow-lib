@@ -1,9 +1,8 @@
 #ifndef IONFLOW_H
 #define IONFLOW_H
 
-#include <string_view>
+#include <cstddef>
 
-std::string_view getGreeting();
-int max(int a, int b);
+constexpr size_t BUFFER_SIZE = 1000;
 
 #endif // IONFLOW_H
