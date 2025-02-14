@@ -4,7 +4,8 @@
 #include <memory>
 #include <thread>
 
-static constexpr int A_PORT = 9999;
+static constexpr int ANY_PORT = 9999;
+static constexpr std::string A_HOST = "127.0.0.1";
 
 TEST(ServiceUnit, new_instance_is_healthy)
 {
@@ -81,8 +82,7 @@ TEST(ServiceUnit, can_attach_sockets)
 {
     IonService svc;
 
-    std::unique_ptr<StickySocket> sock1
-        = std::make_unique<StickySocket>("127.0.0.1", A_PORT);
+    std::unique_ptr<StickySocket> sock1 = std::make_unique<StickySocket>(A_HOST, ANY_PORT);
     int key = svc.attach(std::move(sock1));
 
     EXPECT_GT(key, 0);
@@ -93,8 +93,7 @@ TEST(ServiceUnit, cannot_attach_invalid_sockets)
 {
     IonService svc;
 
-    std::unique_ptr<StickySocket> sock1
-        = std::make_unique<StickySocket>("127.0.0.1", A_PORT);
+    std::unique_ptr<StickySocket> sock1 = std::make_unique<StickySocket>(A_HOST, ANY_PORT);
     sock1->connect();
     sock1->disconnect();
 
@@ -108,8 +107,7 @@ TEST(ServiceUnit, can_dettach_sockets_once)
 {
     IonService svc;
 
-    std::unique_ptr<StickySocket> sock1
-        = std::make_unique<StickySocket>("127.0.0.1", A_PORT);
+    std::unique_ptr<StickySocket> sock1 = std::make_unique<StickySocket>(A_HOST, ANY_PORT);
     int key = svc.attach(std::move(sock1));
     EXPECT_GT(key, 0);
 
