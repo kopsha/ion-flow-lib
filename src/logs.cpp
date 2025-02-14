@@ -6,7 +6,7 @@
   #include <android/log.h>
 #endif
 
-#define RCA "rcAgent"
+static const char MOD_TAG[] = "IonFlow";
 
 void log_debug(const char* format, ...)
 {
@@ -15,9 +15,9 @@ void log_debug(const char* format, ...)
     va_start(args, format);
 
   #ifdef __ANDROID__
-    __android_log_vprint(ANDROID_LOG_DEBUG, RCA, format, args);
+    __android_log_vprint(ANDROID_LOG_DEBUG, MOD_TAG, format, args);
   #else
-    printf("[%s] DEBUG: ", RCA);
+    printf("[%s] DEBUG: ", MOD_TAG);
     vprintf(format, args);
   #endif
     va_end(args);
@@ -30,9 +30,9 @@ void log_info(const char* format, ...)
     va_start(args, format);
 
 #ifdef __ANDROID__
-    __android_log_vprint(ANDROID_LOG_INFO, RCA, format, args);
+    __android_log_vprint(ANDROID_LOG_INFO, MOD_TAG, format, args);
 #else
-    printf("[%s] INFO: ", RCA);
+    printf("[%s] INFO: ", MOD_TAG);
     vprintf(format, args);
 #endif
     va_end(args);
@@ -44,9 +44,9 @@ void log_warning(const char* format, ...)
     va_start(args, format);
 
 #ifdef __ANDROID__
-    __android_log_vprint(ANDROID_LOG_WARN, RCA, format, args);
+    __android_log_vprint(ANDROID_LOG_WARN, MOD_TAG, format, args);
 #else
-    fprintf(stderr, "[%s] WARN: ", RCA);
+    fprintf(stderr, "[%s] WARN: ", MOD_TAG);
     vfprintf(stderr, format, args);
 #endif
     va_end(args);
@@ -58,9 +58,9 @@ void log_error(const char* format, ...)
     va_start(args, format);
 
 #ifdef __ANDROID__
-    __android_log_vprint(ANDROID_LOG_ERROR, RCA, format, args);
+    __android_log_vprint(ANDROID_LOG_ERROR, MOD_TAG, format, args);
 #else
-    fprintf(stderr, "[%s] ERROR: ", RCA);
+    fprintf(stderr, "[%s] ERROR: ", MOD_TAG);
     vfprintf(stderr, format, args);
 #endif
     va_end(args);

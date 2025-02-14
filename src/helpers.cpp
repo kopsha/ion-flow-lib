@@ -14,7 +14,6 @@
 #include <sys/ioctl.h>
 #include <unistd.h>
 
-#define RCA "rcAgent"
 
 const std::string get_hostname()
 {
