@@ -1,7 +1,7 @@
 #ifndef STICKY_SOCKET_H
 #define STICKY_SOCKET_H
 
-#include "ionflow.h"
+#include "sizes.h"
 
 #include <cstdint>
 #include <span>
@@ -13,6 +13,7 @@
 class StickySocket {
 public:
     // numbers and types
+    static constexpr int INVALID_SOCKET = -1;
     static constexpr size_t DEFAULT_RETRIES = 5;
     static constexpr int BACKOFF_MULTIPLIER = 233;
     enum class ConnectionState : uint_fast8_t {
@@ -44,7 +45,6 @@ public:
     virtual void wentOnline();
     virtual void wentOffline();
     virtual void didReceived(std::span<std::byte> buffer);
-
 
 private:
     auto receive() -> std::span<std::byte>;

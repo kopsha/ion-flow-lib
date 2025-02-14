@@ -13,7 +13,6 @@
 #include <unistd.h>
 
 namespace {
-constexpr int INVALID_SOCKET = -1;
 
 auto setSocketNonBlocking(int socket_fd) -> bool
 {
@@ -35,7 +34,7 @@ StickySocket::StickySocket(std::string host, int port, const int retries)
     , online(false)
 {
     rxBuffer.fill(std::byte { 0 });
-    /*open(); // why?*/
+    open(); // why?
 }
 
 StickySocket::~StickySocket() { disconnect(); }

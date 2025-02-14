@@ -6,46 +6,46 @@ VERSION_TAG=$(git describe || git branch --show-current)
 VERSION=${VERSION:-$VERSION_TAG}
 
 
+BUILD_PARAMS="
+-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+-DBUILD_EXAMPLES=ON
+"
+TEST_PARAMS="
+-DBUILD_TESTS=ON
+"
+
 build()
 {
-    mkdir -p build
-    cmake -S . -B ./build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DBUILD_EXAMPLES=ON
+    extra_args=$@
+    cmake ${BUILD_PARAMS} ${TEST_PARAMS} ${extra_args} -S . -B ./build
     cmake --build ./build -- -j$(nproc)
-}
-
-cover_build()
-{
-    mkdir -p build/coverage
-    cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DENABLE_COVERAGE=ON -DBUILD_TESTS=ON
 }
 
 
 main()
 {
+    mkdir -p build
     case $1 in
-        build)
-            build
-            ;;
-        xxx)
-            build
-            ./build/hello_ion
+        debug|release)
+            export CMAKE_BUILD_TYPE=${goal^};
+            EXTRA_CMAKE_ARGS=$@
+            build $EXTRA_CMAKE_ARGS
             ;;
         clean)
             printf "Wiping ./build folder completely.\n"
             rm -rf ./build
             ;;
-        selfcheck)
+        check)
             build
-            ctest -T Test --test-dir ./build
+            ctest --extra-verbose --output-on-failure --test-dir ./build
             ;;
-        cover)
-            cover_build
-            ctest -T Test --test-dir ./build
-            cmake --build ./build --target coverage
+        run)
+            build
+            ./build/hello_ion
             ;;
         tdd)
             build
-            find ./src ./tests ./examples -name "*.cpp" -o -name "*.h" | entr -rc sh -c "cmake --build ./build && ctest --output-on-failure --test-dir ./build/tests"
+            find ./src ./tests ./examples -name "*.cpp" -o -name "*.h" | entr -rc bash -c "./go check"
             ;;
         *)
             "$@"

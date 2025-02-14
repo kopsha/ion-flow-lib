@@ -4,11 +4,9 @@
 #include <array>
 #include <bitset>
 #include <climits>
-#include <cstdint>
 #include <cstring>
 #include <iomanip>
 #include <sstream>
-#include <stdexcept>
 
 #include <arpa/inet.h>
 #include <fcntl.h>

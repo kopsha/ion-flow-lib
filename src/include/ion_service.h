@@ -4,6 +4,7 @@
 #include "sticky_socket.h"
 
 #include <atomic>
+#include <cstddef>
 #include <memory>
 #include <thread>
 #include <unordered_map>
@@ -19,12 +20,13 @@ public:
     void stop();
     void resetHealth();
 
-    void attach(std::unique_ptr<StickySocket> skt);
-    void detach(std::unique_ptr<StickySocket> skt);
+    auto attach(std::unique_ptr<StickySocket> skt) -> int;
+    auto detach(int descriptor) -> std::unique_ptr<StickySocket>;
 
     // inspectors
     auto isRunning() const -> bool;
     auto isHealthy() const -> bool;
+    auto connectionsCount() const -> size_t;
 
 private:
     void loop();

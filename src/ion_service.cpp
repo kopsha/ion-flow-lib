@@ -1,4 +1,3 @@
-#include "helpers.h"
 #include "ion_service.h"
 #include "logs.h"
 #include "sticky_socket.h"
@@ -7,7 +6,6 @@
 #include <chrono>
 #include <cstdio>
 #include <cstring>
-#include <ranges>
 #include <thread>
 #include <vector>
 
@@ -43,6 +41,24 @@ void IonService::stop()
     if (worker.joinable()) {
         worker.join();
     }
+}
+
+auto IonService::attach(std::unique_ptr<StickySocket> skt) -> int
+{
+    auto key = skt->getDescriptor();
+    if (key <= 0) {
+        return StickySocket::INVALID_SOCKET;
+    }
+    auto [it, inserted] = connections.try_emplace(key, std::move(skt));
+    return inserted ? key : StickySocket::INVALID_SOCKET;
+}
+
+auto IonService::detach(int descriptor) -> std::unique_ptr<StickySocket>
+{
+    if (auto skt = connections.extract(descriptor); skt) {
+        return std::move(skt.mapped());
+    }
+    return nullptr;
 }
 
 auto IonService::rebuild_poll_params() const -> std::vector<struct pollfd>
@@ -95,3 +111,5 @@ void IonService::resetHealth() { healthy.store(false); }
 auto IonService::isHealthy() const -> bool { return healthy; }
 
 auto IonService::isRunning() const -> bool { return running; }
+
+auto IonService::connectionsCount() const -> size_t { return connections.size(); }
