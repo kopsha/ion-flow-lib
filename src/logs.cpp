@@ -7,9 +7,6 @@
 #include <sstream>
 #include <string>
 #include <string_view>
-#ifdef __ANDROID__
-  #include <android/log.h>
-#endif
 
 // Function to log binary buffer content in hex format
 void log_buffer(const std::string& name, std::span<const std::byte> buffer)

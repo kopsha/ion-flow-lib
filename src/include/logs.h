@@ -1,6 +1,10 @@
 #ifndef LOGS_H
 #define LOGS_H
 
+#ifdef __ANDROID__
+  #include <android/log.h>
+#endif
+
 #include <cstddef>
 #include <format>
 #include <iostream>
