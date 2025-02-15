@@ -53,6 +53,9 @@ private:
     auto open() -> bool;
     void close();
     void enter(ConnectionState newState);
+    void handlePollError();
+    void handleDataReceive();
+    void handlePollOut();
 
     // members
     int descriptor;

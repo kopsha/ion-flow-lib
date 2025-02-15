@@ -1,18 +1,19 @@
 #ifndef LOGS_H
 #define LOGS_H
 
-#include <cstdint>
+#include <cstddef>
 #include <span>
-#include <string>
+#include <string_view>
 
-enum class LogLevel : uint8_t { DEBUG, INFO, WARNING, ERROR };
+template <typename... Args> void log_debug(std::string_view format, Args&&... args);
 
-void log_debug(const char* format, ...);
-void log_info(const char* format, ...);
-void log_warning(const char* format, ...);
-void log_error(const char* format, ...);
-void log_buffer(const std::string& named, std::span<const std::byte> buffer);
+template <typename... Args> void log_info(std::string_view format, Args&&... args);
 
-#define LOG_TRACE() log_debug("-> %s():\n", __FUNCTION__)
+template <typename... Args> void log_warning(std::string_view format, Args&&... args);
 
-#endif // !LOGS_H
+template <typename... Args> void log_error(std::string_view format, Args&&... args);
+
+// Logs a buffer using Hex representation
+void log_buffer(const std::string& name, std::span<const std::byte> buffer);
+
+#endif // LOGS_H

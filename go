@@ -37,7 +37,7 @@ main()
             ;;
         check)
             build
-            ctest --extra-verbose --output-on-failure --test-dir ./build
+            ctest --extra-verbose --output-on-failure --test-dir ./build/tests
             ;;
         run)
             build

@@ -1,13 +1,29 @@
 ---
 Checks: >
-    -*,
     clang-analyzer-*,
     modernize-*,
     readability-*,
+    -readability-implicit-bool-conversion,
     performance-*,
     bugprone-*,
+    -bugprone-easily-swappable-parameters,  # Avoids false positives in networking code
     cert-*,
-    misc-*
-WarningsAsErrors: '*'
-HeaderFilterRegex: '^src/'
-FormatStyle: none
+    misc-*,
+    portability-*,
+    cppcoreguidelines-*,
+    concurrency-*,
+    android-*,
+    linux-*
+
+WarningsAsErrors: >
+    modernize-*,
+    readability-*,
+    performance-*,
+    cert-*,
+    cppcoreguidelines-*,
+    bugprone-*
+
+HeaderFilterRegex: '^src/'  # Only analyze project headers, not system or external ones
+
+FormatStyle: file  # Uses .clang-format if present (recommended)
+

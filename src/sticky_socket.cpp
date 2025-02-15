@@ -2,10 +2,15 @@
 #include "logs.h"
 #include "sticky_socket.h"
 
+#include <bit>
+#include <cerrno>
+#include <cstddef>
 #include <cstring>
+#include <span>
 #include <string>
+#include <system_error>
+#include <utility>
 
-#include <arpa/inet.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <sys/poll.h>
@@ -16,11 +21,17 @@ namespace {
 
 auto setSocketNonBlocking(int socket_fd) -> bool
 {
-    // WARNING: this may fail, check if flags are positive someday
     int flags = fcntl(socket_fd, F_GETFL, 0);
-    auto err = fcntl(socket_fd, F_SETFL, flags | O_NONBLOCK);
+    if (flags < 0) {
+        return false;
+    }
+    flags |= O_NONBLOCK;
+    auto err = fcntl( // NOLINT(cppcoreguidelines-pro-type-vararg)
+        socket_fd, F_SETFL, std::bit_cast<int>(flags)
+    );
     return err == 0;
 }
+
 } // anonymous namespace
 
 StickySocket::StickySocket(std::string host, int port, const int retries)
@@ -32,8 +43,8 @@ StickySocket::StickySocket(std::string host, int port, const int retries)
     , backOff(0)
     , status(ConnectionState::Disconnected)
     , online(false)
+    , rxBuffer {}
 {
-    rxBuffer.fill(std::byte { 0 });
     open(); // why?
 }
 
@@ -46,7 +57,7 @@ auto StickySocket::open() -> bool
         return true;
     }
 
-    struct addrinfo hints;
+    struct addrinfo hints {};
     struct addrinfo* results = nullptr;
     std::memset(&hints, 0, sizeof(hints));
 
@@ -83,7 +94,7 @@ auto StickySocket::open() -> bool
             }
 
             // Other connection error
-            log_error("Connection failed: %s", std::strerror(errno));
+            log_error("Connection failed: %s", std::system_category().message(errno));
             ::close(descriptor);
             descriptor = INVALID_SOCKET;
         } else if (err == 0) {
@@ -140,7 +151,7 @@ void StickySocket::enter(ConnectionState newState)
         return;
     }
 
-    bool previous = online;
+    const bool previous = online;
     switch (newState) {
     case ConnectionState::Disconnected:
         online = false;
@@ -172,58 +183,66 @@ void StickySocket::enter(ConnectionState newState)
     }
 }
 
+void StickySocket::handlePollError()
+{
+    if (status == ConnectionState::Connecting) {
+        if (attempts >= maxRetries) {
+            log_warning("%s reached its retry limit.\n", host.c_str());
+            enter(ConnectionState::Disconnected);
+        } else {
+            enter(ConnectionState::Retry);
+            log_debug("%s from Connecting to %s\n", host.c_str(), getStatus().c_str());
+        }
+    } else if (status == ConnectionState::Retry) {
+        if (backOff) {
+            backOff--;
+        } else {
+            reconnect();
+        }
+    }
+}
+
+void StickySocket::handleDataReceive()
+{
+    if (status == ConnectionState::Connected) {
+        auto data = receive();
+        if (data.empty()) {
+            attempts = 0;
+            enter(ConnectionState::Retry);
+            log_debug("%s from Connected to %s\n", host.c_str(), getStatus().c_str());
+        } else {
+            didReceived(data);
+        }
+    }
+}
+
+void StickySocket::handlePollOut()
+{
+    if (status == ConnectionState::Connecting) {
+        enter(ConnectionState::Connected);
+    }
+}
+
 auto StickySocket::eval(const struct pollfd& response) -> ConnectionState
 {
-    // TODO: refactor this
     if (status == ConnectionState::Disconnected) {
         log_error("%s should not evaluate poll for disconnected socket.\n", host.c_str());
         return ConnectionState::None;
     }
 
-    ConnectionState lastStatus = status;
-    int lastAttempts = attempts;
+    const ConnectionState lastStatus { status };
+    const int lastAttempts { attempts };
 
-    // NOLINTBEGIN(readability-implicit-bool-conversion)
     if (response.revents & (POLLNVAL | POLLERR | POLLHUP)) {
-        if (status == ConnectionState::Connecting) {
-            if (attempts >= maxRetries) {
-                log_warning("%s reached its retry limit.\n", host.c_str());
-                enter(ConnectionState::Disconnected);
-            } else {
-                enter(ConnectionState::Retry);
-                log_debug("%s from Connecting to %s\n", host.c_str(), getStatus().c_str());
-            }
-        } else if (status == ConnectionState::Retry) {
-            if (backOff) {
-                backOff--;
-            } else {
-                reconnect();
-            }
-        }
+        handlePollError();
     } else if (response.revents & (POLLIN | POLLPRI)) {
-        if (status == ConnectionState::Connected) {
-            auto data = receive();
-            if (data.size() == 0) {
-                attempts = 0;
-                enter(ConnectionState::Retry);
-                log_debug("%s from Connected to %s\n", host.c_str(), getStatus().c_str());
-            } else {
-                didReceived(data);
-            }
-        }
+        handleDataReceive();
     } else if (response.revents & POLLOUT) {
-        if (status == ConnectionState::Connecting) {
-            enter(ConnectionState::Connected);
-        }
-    } else {
-        // nothing happened...
+        handlePollOut();
     }
-    // NOLINTEND(readability-implicit-bool-conversion)
 
-    if (status != lastStatus || attempts != lastAttempts) {
-        return status;
-    }
-    return ConnectionState::None;
+    return (status != lastStatus || attempts != lastAttempts) ? status
+                                                              : ConnectionState::None;
 }
 
 void StickySocket::send(const std::span<const std::byte> buffer)
@@ -234,7 +253,7 @@ void StickySocket::send(const std::span<const std::byte> buffer)
     }
 
     // TODO: maybe switch to "sending?"
-    size_t bytes = ::send(descriptor, buffer.data(), buffer.size(), 0);
+    const size_t bytes = ::send(descriptor, buffer.data(), buffer.size(), 0);
     if (bytes < 0) {
         log_error("Failed to send to %s.\n", host.c_str());
     } else {
@@ -249,7 +268,7 @@ auto StickySocket::receive() -> std::span<std::byte>
         return std::span<std::byte> {};
     }
 
-    size_t bytes = ::recv(descriptor, rxBuffer.data(), rxBuffer.size(), 0);
+    const size_t bytes = ::recv(descriptor, rxBuffer.data(), rxBuffer.size(), 0);
     if (bytes < 0) {
         log_error("%s receive failed.\n");
         return std::span<std::byte> {};

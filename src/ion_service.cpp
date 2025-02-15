@@ -8,11 +8,11 @@
 #include <cstring>
 #include <thread>
 #include <vector>
+#include <memory>
+#include <utility>
 
 #include <poll.h>
 #include <sys/poll.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 
 constexpr int EVENT_WINDOW = 21;
 constexpr int CHILL_WINDOW = 13;
@@ -27,7 +27,7 @@ IonService::~IonService() { stop(); }
 
 void IonService::start()
 {
-    bool alreadyRunning = running.exchange(true);
+    const bool alreadyRunning = running.exchange(true);
     if (alreadyRunning) {
         log_warning("service is already running, start ignored.\n");
         return;
@@ -89,7 +89,7 @@ void IonService::loop()
             for (const auto response : params) {
                 auto& skt = connections[response.fd];
                 /*log_revents(response.revents);*/
-                auto newState = skt->eval(response);
+                skt->eval(response);
             }
         }
 
