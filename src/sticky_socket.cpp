@@ -281,8 +281,6 @@ auto StickySocket::receive() -> std::span<std::byte>
     return std::span<std::byte> { rxBuffer.data(), bytes };
 }
 
-auto StickySocket::isOnline() const -> bool { return online; }
-
 auto StickySocket::isAlive() const -> bool
 {
     return status != ConnectionState::Disconnected;

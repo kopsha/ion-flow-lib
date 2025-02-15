@@ -26,7 +26,11 @@ public:
 
     // you know
     StickySocket(std::string host, int port, int retries = DEFAULT_RETRIES);
-    ~StickySocket();
+    StickySocket(StickySocket&&) noexcept = default;
+    auto operator=(StickySocket&&) noexcept -> StickySocket& = default;
+    StickySocket(const StickySocket&) = delete;
+    auto operator=(const StickySocket&) -> StickySocket& = delete;
+    virtual ~StickySocket();
 
     // actions
     void connect();
@@ -40,12 +44,14 @@ public:
     [[nodiscard]] auto getState() const -> ConnectionState;
     [[nodiscard]] auto getDescriptor() const -> int;
     [[nodiscard]] auto isAlive() const -> bool;
-    [[nodiscard]] auto isOnline() const -> bool;
 
     // notifications
     virtual void wentOnline();
     virtual void wentOffline();
     virtual void didReceived(std::span<std::byte> buffer);
+
+protected:
+    bool online; // NOLINT(misc-non-private-member-variables-in-classes)
 
 private:
     auto receive() -> std::span<std::byte>;
@@ -60,7 +66,6 @@ private:
     // members
     int descriptor;
     ConnectionState status;
-    bool online;
     std::string host;
     std::string port;
     int maxRetries;

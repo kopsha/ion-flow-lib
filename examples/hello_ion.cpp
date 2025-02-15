@@ -40,22 +40,22 @@ void supervisor(IonService& agent)
 auto main() -> int
 {
     log_info("Starting service and supervisor threads...\n");
-    IonService agent;
+    IonService flow;
 
     // enter supervisor context
     auto prevIntH = std::signal(SIGINT, signalHandler);
     auto prevTermH = std::signal(SIGTERM, signalHandler);
-    std::thread runner(supervisor, std::ref(agent));
+    std::thread runner(supervisor, std::ref(flow));
 
     try {
-        agent.start(); // as a separate thread
+        flow.start(); // as a separate thread
 
-        while (!pleaseStop && agent.isRunning()) {
+        while (!pleaseStop && flow.isRunning()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(SUPERVISOR_CYCLE));
         }
 
-        if (agent.isRunning()) {
-            agent.stop();
+        if (flow.isRunning()) {
+            flow.stop();
         }
     } catch (const std::exception& err) {
         log_error(

@@ -5,6 +5,7 @@ CONTEXT=${CONTEXT:-local}
 VERSION_TAG=$(git describe || git branch --show-current)
 VERSION=${VERSION:-$VERSION_TAG}
 
+export CMAKE_BUILD_TYPE="Debug";
 
 BUILD_PARAMS="
 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
@@ -16,7 +17,7 @@ TEST_PARAMS="
 build()
 {
     extra_args=$@
-    cmake ${BUILD_PARAMS} ${TEST_PARAMS} ${extra_args} -S . -B ./build
+    cmake ${BUILD_PARAMS} ${extra_args} -S . -B ./build
     cmake --build ./build -- -j$(nproc)
 }
 
@@ -45,7 +46,7 @@ main()
             rm -rf ./build
             ;;
         check)
-            build
+            build ${TEST_PARAMS}
             ctest --extra-verbose --output-on-failure --test-dir ./build/tests
             ;;
         run)

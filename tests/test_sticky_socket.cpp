@@ -13,7 +13,6 @@ TEST(StickySocket, new_instance__is_disconnected)
     StickySocket skt(A_HOST, ANY_PORT);
 
     EXPECT_EQ(skt.getState(), StickySocket::ConnectionState::Disconnected);
-    EXPECT_FALSE(skt.isOnline());
     EXPECT_FALSE(skt.isAlive());
     EXPECT_EQ(skt.getHost(), A_HOST);
 }
