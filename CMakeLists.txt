@@ -16,23 +16,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(BUILD_EXAMPLES "Build the examples" OFF)
 option(BUILD_TESTS "Build unit tests" OFF)
 
-# working clean
-find_program(CLANG_TIDY_CLI "clang-tidy")
-if(CLANG_TIDY_CLI)
-    message(STATUS "Using clang-tidy at: ${CLANG_TIDY_CLI}.")
-    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_CLI}" --extra-arg=-std=c++20)
-else()
-    message(WARN "clang-tidy not found. Static analysis will not be performed.")
-endif()
-
 add_subdirectory(src)
 
-# if(BUILD_EXAMPLES)
-#     add_subdirectory(examples)
-# endif()
-#
-# if(BUILD_TESTS)
-#     enable_testing()
-#     add_subdirectory(tests/)
-# endif()
-#
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests/)
+endif()

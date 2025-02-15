@@ -8,7 +8,6 @@ VERSION=${VERSION:-$VERSION_TAG}
 
 BUILD_PARAMS="
 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
--DBUILD_EXAMPLES=ON
 "
 TEST_PARAMS="
 -DBUILD_TESTS=ON
@@ -21,15 +20,25 @@ build()
     cmake --build ./build -- -j$(nproc)
 }
 
+build_dist()
+{
+    mkdir -p build/dist
+    rm -rf build/dist/*
+    extra_args=$@
+    cmake ${BUILD_PARAMS} ${extra_args} -S . -B ./build
+    cmake --build ./build -- -j$(nproc)
+    cmake --install ./build --prefix build/dist
+}
 
 main()
 {
     mkdir -p build
-    case $1 in
+    goal=${1:-}; shift
+    case ${goal} in
         debug|release)
             export CMAKE_BUILD_TYPE=${goal^};
             EXTRA_CMAKE_ARGS=$@
-            build $EXTRA_CMAKE_ARGS
+            build_dist $EXTRA_CMAKE_ARGS
             ;;
         clean)
             printf "Wiping ./build folder completely.\n"
@@ -40,8 +49,8 @@ main()
             ctest --extra-verbose --output-on-failure --test-dir ./build/tests
             ;;
         run)
-            build
-            ./build/hello_ion
+            build "-DBUILD_EXAMPLES=ON"
+            ./build/examples/ionExample
             ;;
         tdd)
             build
