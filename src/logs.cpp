@@ -1,12 +1,13 @@
 #include "logs.h"
 
 #include <cstdarg>
+#include <cstdio>
 #include <vector>
 #ifdef __ANDROID__
   #include <android/log.h>
 #endif
 
-static const char MOD_TAG[] = "IonFlow";
+static constexpr char* MOD_TAG = "IonFlow";
 
 void log_debug(const char* format, ...)
 {

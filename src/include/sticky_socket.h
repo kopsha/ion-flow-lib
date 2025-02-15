@@ -37,6 +37,7 @@ public:
     // inspectors
     [[nodiscard]] auto getHost() const -> const std::string&;
     [[nodiscard]] auto getStatus() const -> const std::string&;
+    [[nodiscard]] auto getState() const -> ConnectionState;
     [[nodiscard]] auto getDescriptor() const -> int;
     [[nodiscard]] auto isAlive() const -> bool;
     [[nodiscard]] auto isOnline() const -> bool;

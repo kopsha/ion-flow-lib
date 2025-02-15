@@ -1,6 +1,8 @@
 #include "ion_service.h"
-#include <chrono>
+
 #include <gtest/gtest.h>
+
+#include <chrono>
 #include <memory>
 #include <thread>
 

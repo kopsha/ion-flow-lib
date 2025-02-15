@@ -1,24 +1,44 @@
-include(FetchContent)
-FetchContent_Declare(
-    googletest
-    GIT_REPOSITORY https://github.com/google/googletest.git
-    GIT_TAG v1.15.2)
-FetchContent_MakeAvailable(googletest)
+cmake_minimum_required(VERSION 3.10)
+project(
+    IonFlow
+    VERSION 1.0.0
+    LANGUAGES CXX)
 
-include(CTest)
-include(GoogleTest)
+message(
+    STATUS
+        "Building -=[ ${CMAKE_PROJECT_NAME} v${CMAKE_PROJECT_VERSION}-${CMAKE_BUILD_TYPE} (${TARGET_PLATFORM}-${TARGET_ABI}) ]=-"
+)
 
-# Find all .cpp files in the current directory
-file(GLOB TEST_SOURCES "*.cpp")
-add_executable(flowTests ${TEST_SOURCES})
-target_link_libraries(flowTests PRIVATE gtest_main ionFlowLib)
-target_include_directories(flowTests
-                           PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/include)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED YES)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_test(
-    NAME flowTests
-    COMMAND flowTests
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
-set_tests_properties(flowTests PROPERTIES LABELS "unit")
-gtest_discover_tests(flowTests)
+option(BUILD_EXAMPLES "Build the examples" OFF)
+option(BUILD_TESTS "Build unit tests" OFF)
 
+# define library target
+file(GLOB ION_SOURCES "src/*.cpp")
+add_library(ionFlowLib STATIC ${ION_SOURCES})
+
+target_include_directories(
+    ionFlowLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/include>
+                      $<INSTALL_INTERFACE:include/ionflow>)
+
+if(BUILD_EXAMPLES)
+    add_executable(hello_ion examples/hello_ion.cpp)
+    target_link_libraries(hello_ion PRIVATE ionFlowLib)
+endif()
+
+if(BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+# working clean
+find_program(CLANG_TIDY_CLI "clang-tidy")
+if(CLANG_TIDY_CLI)
+    message(STATUS "Using clang-tidy at: ${CLANG_TIDY_CLI}.")
+    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_CLI}")
+else()
+    message(WARN "clang-tidy not found. Static analysis will not be performed.")
+endif()
