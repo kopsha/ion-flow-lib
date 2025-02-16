@@ -1,5 +1,4 @@
-#ifndef LOGS_H
-#define LOGS_H
+#pragma once
 
 #ifdef __ANDROID__
   #include <android/log.h>
@@ -70,6 +69,5 @@ template <typename... Args> void log_error(std::string_view format, Args&&... ar
 // Logs a buffer using Hex representation
 void log_buffer(const std::string& name, std::span<const std::byte> buffer);
 
-#define LOG_TRACE() log_debug("-> %s():\n", __FUNCTION__)
+#define LOG_TRACE() log_debug("-> {}():", __FUNCTION__) // NOLINT(cppcoreguidelines-macro-usage)
 
-#endif // LOGS_H

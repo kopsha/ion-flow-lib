@@ -1,0 +1,6 @@
+#pragma once
+#include <string>
+
+namespace ionflow {
+constexpr std::string version { "@LIB_VERSION@" };
+}

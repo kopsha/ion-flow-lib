@@ -1,17 +1,18 @@
-#include <poll.h>
-
-#include "ion_service.h"
-#include "logs.h"
+#include "ionflow.h"
 
 #include <atomic>
 #include <chrono>
 #include <csignal>
 #include <exception>
+#include <memory>
 #include <thread>
+#include <utility>
 
 namespace {
 
 constexpr int SUPERVISOR_CYCLE = 233;
+constexpr int SICP_PORT = 5000;
+
 std::atomic<bool> pleaseStop { false };
 
 void signalHandler(int signal)
@@ -39,7 +40,7 @@ void supervisor(IonService& agent)
 
 auto main() -> int
 {
-    log_info("Starting service and supervisor threads...\n");
+    log_info("Starting service and supervisor threads...");
     IonService flow;
 
     // enter supervisor context
@@ -49,6 +50,8 @@ auto main() -> int
 
     try {
         flow.start(); // as a separate thread
+        std::unique_ptr<IonSession> logic = std::make_unique<IonSession>("localhost", SICP_PORT);
+        flow.attach(std::move(logic));
 
         while (!pleaseStop && flow.isRunning()) {
             std::this_thread::sleep_for(std::chrono::milliseconds(SUPERVISOR_CYCLE));

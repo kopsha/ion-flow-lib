@@ -75,7 +75,7 @@ auto IonService::rebuild_poll_params() const -> std::vector<struct pollfd>
 
 void IonService::loop()
 {
-    log_info("Starting event loop.\n");
+    log_info("Starting event loop.");
 
     while (running) {
         healthy = true;
@@ -84,7 +84,7 @@ void IonService::loop()
         auto params = rebuild_poll_params();
         int err = poll(params.data(), params.size(), EVENT_WINDOW);
         if (err < 0) {
-            log_error("Polling error: %d.\n", err);
+            log_error("Polling error: %d.", err);
         } else if (err > 0) {
             for (const auto response : params) {
                 auto& skt = connections[response.fd];
@@ -96,7 +96,7 @@ void IonService::loop()
         if (std::ranges::none_of(connections, [](const auto& entry) {
                 return entry.second->isAlive();
             })) {
-            log_warning("all connections are dead\n");
+            log_warning("all connections are dead");
             running = false;
         } else {
             std::this_thread::sleep_for(std::chrono::milliseconds(CHILL_WINDOW));

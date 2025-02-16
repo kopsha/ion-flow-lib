@@ -9,20 +9,25 @@ else()
     message(WARN ": Cannot find clang-tidy.")
 endif()
 
+set(LIB_VERSION $ENV{VERSION})
+configure_file("${CMAKE_SOURCE_DIR}/src/version.h.in"
+               "${PROJECT_BINARY_DIR}/include/version.h" @ONLY)
+
 file(GLOB ION_SOURCES "*.cpp")
 target_sources(ionFlowLib PRIVATE ${ION_SOURCES})
 target_include_directories(
-    ionFlowLib PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-                      $<INSTALL_INTERFACE:include/ionflow>)
+    ionFlowLib
+    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+           $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
+           $<INSTALL_INTERFACE:include/ionflow>)
 
 # Install rules for the library
 install(
     TARGETS ionFlowLib
-    EXPORT ionFlowTargets
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin)
-
-# Install the library's headers
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION include/ionflow)
-
+install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/include/
+        DESTINATION include/ionflow)
+install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION include/ionflow)
+# # install()

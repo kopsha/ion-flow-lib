@@ -3,8 +3,7 @@ set -euo pipefail
 
 CONTEXT=${CONTEXT:-local}
 VERSION_TAG=$(git describe || git branch --show-current)
-VERSION=${VERSION:-$VERSION_TAG}
-
+export VERSION=${VERSION:-$VERSION_TAG}
 export CMAKE_BUILD_TYPE="Debug";
 
 BUILD_PARAMS="
@@ -63,6 +62,6 @@ main()
     esac
 }
 
-printf "\t..: Running version $VERSION on $CONTEXT\n"
+printf "\t..: Using version $VERSION on $CONTEXT\n"
 main "$@"
 

@@ -66,7 +66,7 @@ auto StickySocket::open() -> bool
     hints.ai_socktype = SOCK_STREAM; // TCP
     int err = getaddrinfo(host.c_str(), port.c_str(), &hints, &results);
     if (err != 0) {
-        log_error("Cannot resolve %s, reason: %s", host.c_str(), gai_strerror(err));
+        log_error("Cannot resolve {}, reason: {}", host, gai_strerror(err));
         descriptor = INVALID_SOCKET;
         return false;
     }
@@ -116,9 +116,9 @@ void StickySocket::close()
 
 void StickySocket::connect()
 {
-    log_debug("connect call %s\n", host.c_str());
+    log_debug("connect call {}", host);
     if (status != ConnectionState::Disconnected) {
-        log_warning("%s connection is already in progress.\n", host.c_str());
+        log_warning("{} connection is already in progress.", host);
         return;
     }
     attempts = 0;
@@ -127,14 +127,14 @@ void StickySocket::connect()
 
 void StickySocket::reconnect()
 {
-    log_debug(" -> reconnect() on %s\n", host.c_str());
+    log_debug(" -> reconnect() on {}.", host);
     attempts++;
     if (open()) {
         enter(ConnectionState::Connecting);
-        log_debug("%s is %s\n", host.c_str(), getStatus().c_str());
+        log_debug("{} did enter {}", host, getStatus());
     } else {
         if (attempts >= maxRetries) {
-            log_warning("%s reached its retry limit.\n", host.c_str());
+            log_warning("{} reached its retry limit.", host);
             enter(ConnectionState::Disconnected);
         } else {
             enter(ConnectionState::Retry);
@@ -147,7 +147,7 @@ void StickySocket::disconnect() { enter(ConnectionState::Disconnected); }
 void StickySocket::enter(ConnectionState newState)
 {
     if (status == newState) {
-        log_debug("ignored same state transition, %s\n", getStatus().c_str());
+        log_debug("ignored same state transition, {}", getStatus());
         return;
     }
 
@@ -247,6 +247,7 @@ auto StickySocket::eval(const struct pollfd& response) -> ConnectionState
 
 void StickySocket::send(const std::span<const std::byte> buffer)
 {
+    LOG_TRACE();
     if (status != ConnectionState::Connected) {
         log_warning("%s cannot send anything, is not connected.\n", host.c_str());
         return;

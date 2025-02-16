@@ -1,5 +1,4 @@
-#ifndef RC_AGENT_H
-#define RC_AGENT_H
+#pragma once
 
 #include "sticky_socket.h"
 
@@ -39,4 +38,3 @@ private:
     std::unordered_map<int, std::unique_ptr<StickySocket>> connections;
 };
 
-#endif // RC_AGENT_H
