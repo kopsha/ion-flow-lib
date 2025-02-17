@@ -45,6 +45,7 @@ auto readHostname() -> std::string
 
     const int err = gethostname(hostname.data(), HOST_NAME_MAX);
     if (err < 0) {
+        log_error("Cannot read hostname.\n");
         return std::move(std::string());
     }
     hostname[HOST_NAME_MAX] = '\0';
