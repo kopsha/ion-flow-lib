@@ -21,6 +21,15 @@ target_include_directories(
            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
            $<INSTALL_INTERFACE:include/ionflow>)
 
+# Coverage settings
+if(ENABLE_COVERAGE)
+    message(STATUS "Building for coverage...")
+    target_compile_options(
+        ionFlowLib PRIVATE -O0 -fprofile-generate -fno-exceptions -fno-inline
+                           -coverage)
+    target_link_options(ionFlowLib PRIVATE -coverage)
+endif()
+
 # Install rules for the library
 install(
     TARGETS ionFlowLib
@@ -30,4 +39,3 @@ install(
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/include/
         DESTINATION include/ionflow)
 install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION include/ionflow)
-# # install()

@@ -9,9 +9,6 @@ export CMAKE_BUILD_TYPE="Debug";
 BUILD_PARAMS="
 -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 "
-TEST_PARAMS="
--DBUILD_TESTS=ON
-"
 
 build()
 {
@@ -45,8 +42,14 @@ main()
             rm -rf ./build
             ;;
         check)
-            build ${TEST_PARAMS}
+            build -DBUILD_TESTS=ON
             ctest --verbose --output-on-failure --test-dir ./build/tests
+            ;;
+        cover)
+            mkdir -p build/coverage
+            build -DBUILD_TESTS=ON -DENABLE_COVERAGE=ON
+            ctest --output-on-failure --test-dir ./build/tests
+            cmake --build ./build --target coverage
             ;;
         run)
             build "-DBUILD_EXAMPLES=ON"

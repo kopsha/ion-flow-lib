@@ -15,6 +15,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(BUILD_EXAMPLES "Build the examples" OFF)
 option(BUILD_TESTS "Build unit tests" OFF)
+option(ENABLE_COVERAGE "Enable test coverage reports" OFF)
 
 add_subdirectory(src)
 
