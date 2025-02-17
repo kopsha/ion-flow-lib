@@ -11,7 +11,6 @@
 #include <memory>
 #include <utility>
 
-#include <poll.h>
 #include <sys/poll.h>
 
 constexpr int EVENT_WINDOW = 21;

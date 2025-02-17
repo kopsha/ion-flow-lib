@@ -1,8 +1,5 @@
-#ifndef SIZES_H
-#define SIZES_H
+#pragma once
 
 #include <cstddef>
 
 constexpr size_t BUFFER_SIZE = 1000;
-
-#endif // SIZES_H

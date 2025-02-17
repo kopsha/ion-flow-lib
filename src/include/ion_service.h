@@ -14,6 +14,12 @@ public:
     IonService();
     ~IonService();
 
+    // enforce strict references
+    IonService(const IonService&) = delete;
+    IonService(IonService&&) = delete;
+    auto operator=(const IonService&) -> IonService& = delete;
+    auto operator=(IonService&&)->IonService& = delete;
+
     // actions
     void start();
     void stop();
@@ -37,4 +43,3 @@ private:
     std::thread worker;
     std::unordered_map<int, std::unique_ptr<StickySocket>> connections;
 };
-

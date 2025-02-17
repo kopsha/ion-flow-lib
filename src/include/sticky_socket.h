@@ -1,5 +1,4 @@
-#ifndef STICKY_SOCKET_H
-#define STICKY_SOCKET_H
+#pragma once
 
 #include "sizes.h"
 
@@ -73,5 +72,3 @@ private:
     int backOff;
     std::array<std::byte, BUFFER_SIZE> rxBuffer;
 };
-
-#endif // !STICKY_SOCKET_H
