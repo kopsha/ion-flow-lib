@@ -46,7 +46,7 @@ main()
             ;;
         check)
             build ${TEST_PARAMS}
-            ctest --extra-verbose --output-on-failure --test-dir ./build/tests
+            ctest --verbose --output-on-failure --test-dir ./build/tests
             ;;
         run)
             build "-DBUILD_EXAMPLES=ON"

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "helpnet.h" // NOLINT(clang-diagnostic-unused-include)
 #include "ion_service.h" // NOLINT(clang-diagnostic-unused-include)
 #include "ion_session.h" // NOLINT(clang-diagnostic-unused-include)
 #include "logs.h" // NOLINT(clang-diagnostic-unused-include)

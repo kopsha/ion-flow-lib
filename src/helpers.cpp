@@ -22,6 +22,7 @@
   #include <bits/posix1_lim.h>
 #endif
 
+
 auto get_hostname() -> std::string
 {
     std::array<char, HOST_NAME_MAX + 1> hostname {};
