@@ -11,4 +11,5 @@ struct Interface {
 
 auto readHostname() -> std::string;
 auto listInterfaces() -> std::vector<Interface>;
+void log_revents(short int revents);
 }

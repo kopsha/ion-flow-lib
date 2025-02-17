@@ -1,4 +1,4 @@
-#include "helpers.h"
+#include "helpnet.h"
 #include "logs.h"
 #include "sticky_socket.h"
 
@@ -26,9 +26,7 @@ auto setSocketNonBlocking(int socket_fd) -> bool
         return false;
     }
     flags |= O_NONBLOCK;
-    auto err = fcntl( // NOLINT(cppcoreguidelines-pro-type-vararg)
-        socket_fd, F_SETFL, std::bit_cast<int>(flags)
-    );
+    auto err = fcntl(socket_fd, F_SETFL, std::bit_cast<int>(flags));
     return err == 0;
 }
 

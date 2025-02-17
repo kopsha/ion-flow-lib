@@ -30,6 +30,7 @@ build_dist()
 main()
 {
     mkdir -p build
+
     goal=${1:-}; shift
     case ${goal} in
         debug|release)
@@ -38,8 +39,8 @@ main()
             build_dist $EXTRA_CMAKE_ARGS
             ;;
         clean)
-            printf "Wiping ./build folder completely.\n"
-            rm -rf ./build
+            printf "Wiping clean the ./build folder.\n"
+            find ./build -mindepth 1 -maxdepth 1 ! -name '_deps' -exec rm -rf {} +
             ;;
         check)
             build -DBUILD_TESTS=ON

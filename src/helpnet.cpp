@@ -2,18 +2,19 @@
 #include "logs.h"
 
 #include <array>
+#include <bitset>
+#include <filesystem>
 #include <fstream>
+#include <string>
 #include <utility>
+#include <vector>
 
 #include <dirent.h>
 #include <unistd.h>
+#include <sys/poll.h>
 #ifdef __USE_POSIX
   #include <bits/posix1_lim.h>
 #endif
-
-#include <filesystem>
-#include <string>
-#include <vector>
 
 namespace fs = std::filesystem;
 
@@ -80,4 +81,29 @@ auto listInterfaces() -> std::vector<Interface>
     return std::move(interfaces);
 }
 
+void log_revents(short int revents)
+{
+    log_debug(
+        "Revents (0b%s):\n", std::bitset<sizeof(revents) * 2>(revents).to_string().c_str()
+    );
+
+    if (revents & POLLIN) {
+        log_debug("  POLLIN: Data to read\n");
+    }
+    if (revents & POLLPRI) {
+        log_debug("  POLLPRI: Urgent data to read\n");
+    }
+    if (revents & POLLOUT) {
+        log_debug("  POLLOUT: Ready for output\n");
+    }
+    if (revents & POLLERR) {
+        log_debug("  POLLERR: Error condition\n");
+    }
+    if (revents & POLLHUP) {
+        log_debug("  POLLHUP: Hang up\n");
+    }
+    if (revents & POLLNVAL) {
+        log_debug("  POLLNAL: Invalid request\n");
+    }
+}
 } // namespace helpnet
