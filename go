@@ -60,6 +60,9 @@ main()
             build
             find ./src ./tests ./examples -name "*.cpp" -o -name "*.h" | entr -rc bash -c "./go check"
             ;;
+        pretti)
+            find ./src ./tests ./examples -type f \( -name "*.cpp" -o -name "*.h" \) -exec clang-format --verbose -i {} +
+            ;;
         *)
             "$@"
             ;;

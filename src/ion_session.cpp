@@ -5,7 +5,9 @@ void IonSession::wentOnline()
 {
     LOG_TRACE();
     std::string anything { "hello world!" };
-    send(std::span<std::byte>(reinterpret_cast<std::byte*>(anything.data()), anything.size()));
+    send(std::span<std::byte>(
+        reinterpret_cast<std::byte*>(anything.data()), anything.size()
+    ));
 }
 
 void IonSession::wentOffline() { LOG_TRACE(); }

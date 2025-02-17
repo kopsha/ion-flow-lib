@@ -1,6 +1,6 @@
+#include "sticky_socket.h"
 #include "helpnet.h"
 #include "logs.h"
-#include "sticky_socket.h"
 
 #include <bit>
 #include <cerrno>
@@ -55,7 +55,7 @@ auto StickySocket::open() -> bool
         return true;
     }
 
-    struct addrinfo hints {};
+    struct addrinfo hints { };
     struct addrinfo* results = nullptr;
     std::memset(&hints, 0, sizeof(hints));
 

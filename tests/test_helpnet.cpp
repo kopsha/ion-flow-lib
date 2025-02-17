@@ -2,12 +2,14 @@
 
 #include <gtest/gtest.h>
 
-TEST(HelpNet, can_read_hostname) {
+TEST(HelpNet, can_read_hostname)
+{
     std::string hostname = helpnet::readHostname();
     EXPECT_FALSE(hostname.empty());
 }
 
-TEST(HelpNet, can_list_interfaces) {
+TEST(HelpNet, can_list_interfaces)
+{
     auto interfaces = helpnet::listInterfaces();
 
     EXPECT_FALSE(interfaces.empty());

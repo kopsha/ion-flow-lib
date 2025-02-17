@@ -50,7 +50,8 @@ auto main() -> int
 
     try {
         flow.start(); // as a separate thread
-        std::unique_ptr<IonSession> logic = std::make_unique<IonSession>("localhost", SICP_PORT);
+        std::unique_ptr<IonSession> logic
+            = std::make_unique<IonSession>("localhost", SICP_PORT);
         flow.attach(std::move(logic));
 
         while (!pleaseStop && flow.isRunning()) {

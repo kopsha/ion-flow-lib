@@ -69,5 +69,5 @@ template <typename... Args> void log_error(std::string_view format, Args&&... ar
 // Logs a buffer using Hex representation
 void log_buffer(const std::string& name, std::span<const std::byte> buffer);
 
-#define LOG_TRACE() log_debug("-> {}():", __FUNCTION__) // NOLINT(cppcoreguidelines-macro-usage)
-
+#define LOG_TRACE()                                                                       \
+    log_debug("-> {}():", __FUNCTION__) // NOLINT(cppcoreguidelines-macro-usage)

@@ -10,8 +10,8 @@
 #include <vector>
 
 #include <dirent.h>
-#include <unistd.h>
 #include <sys/poll.h>
+#include <unistd.h>
 #ifdef __USE_POSIX
   #include <bits/posix1_lim.h>
 #endif
@@ -70,9 +70,9 @@ auto listInterfaces() -> std::vector<Interface>
             log_info("Checking {}\n", address.string());
             if (fs::exists(address)) {
                 struct Interface intf {
-                    .name = entry.path().filename().string(),
-                    .mac = fromFile(address),
+                    .name = entry.path().filename().string(), .mac = fromFile(address),
                 };
+
                 interfaces.push_back(intf);
             }
         }

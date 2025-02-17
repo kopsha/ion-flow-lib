@@ -18,7 +18,7 @@ public:
     IonService(const IonService&) = delete;
     IonService(IonService&&) = delete;
     auto operator=(const IonService&) -> IonService& = delete;
-    auto operator=(IonService&&)->IonService& = delete;
+    auto operator=(IonService&&) -> IonService& = delete;
 
     // actions
     void start();
