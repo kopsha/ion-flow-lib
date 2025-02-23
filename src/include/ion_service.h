@@ -19,7 +19,8 @@ class IonService
     IonService& operator=(IonService&&) = delete;
 
     // actions
-    void start();
+    void setup();
+    void start(std::stop_token superToken);
     void stop();
     void resetHealth();
 
@@ -27,12 +28,15 @@ class IonService
     [[nodiscard]] auto isRunning() const -> bool;
     [[nodiscard]] auto isHealthy() const -> bool;
 
+    // notifications
+    void onEntry();
+    void onExit();
+
   protected:
-    void loop();
+    void loop(std::stop_token token);
 
   private:
     std::atomic<bool> healthy;
-    std::atomic<bool> running;
-    std::thread worker;
+    std::jthread worker;
     StickyEngine engine;
 };

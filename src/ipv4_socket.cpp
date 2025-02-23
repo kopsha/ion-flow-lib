@@ -1,7 +1,7 @@
+#include "ipv4_socket.h"
 #include "console.h"
 #include "easy_socket.h"
 #include "ioi.h"
-#include "ipv4_socket.h"
 
 #include <arpa/inet.h>
 #include <cstdint>
@@ -129,9 +129,9 @@ auto IPv4Socket::connect() -> bool
     }
 
     // validate server IP address
-    struct sockaddr_in serverAddr {
-        .sin_family = AF_INET,
-        .sin_port = htons(port),
+    struct sockaddr_in serverAddr
+    {
+        .sin_family = AF_INET, .sin_port = htons(port),
         .sin_addr = { .s_addr = INADDR_ANY },
     };
 

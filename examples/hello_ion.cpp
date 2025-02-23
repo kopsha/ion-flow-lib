@@ -1,94 +1,81 @@
+#include "console.h"
+#include "ion_service.h"
 #include "ionflow.h"
 
-#include <atomic>
 #include <chrono>
 #include <csignal>
 #include <exception>
+#include <stop_token>
 #include <thread>
 
 constexpr int SUPERVISOR_CYCLE = 233;
-static std::atomic<bool> pleaseStop { false };
+static std::stop_source super;
 
 static void signalHandler(int signal)
 {
     if (signal == SIGINT || signal == SIGTERM)
     {
-        console::info("Stop signal received ({}).\n", signal);
-        pleaseStop = true;
+        console::info("Stop signal received ({}).", signal);
+        super.request_stop();
     }
 }
 
-static void supervisor(IonService& service)
+static void supervise(IonService& service)
 {
-    while (!pleaseStop)
+    console::info("Supervisor thread is running...");
+    auto token = super.get_token();
+    while (!token.stop_requested())
     {
-        std::this_thread::sleep_for(std::chrono::seconds(3));
+        std::this_thread::sleep_for(std::chrono::seconds(2));
         if (service.isRunning())
         {
             if (!service.isHealthy())
             {
                 console::warning("Service appears unresponsive. Restarting...\n");
                 service.stop();
-                service.start();
+                service.start(super.get_token());
             }
             else
             {
                 service.resetHealth();
             }
         }
+        else
+        {
+            service.start(super.get_token());
+        }
     }
+    service.stop();
+    console::info("Supervisor thread gracefully ended.");
 }
 
-auto main() -> int
+int main()
 {
+
     auto prevIntH = std::signal(SIGINT, signalHandler);
     auto prevTermH = std::signal(SIGTERM, signalHandler);
-
     IoAdapter netw;
     IonService flow(netw);
 
-    console::info("Enter supervised context.");
-    std::thread runner(supervisor, std::ref(flow));
     try
     {
-        flow.start(); // as a separate thread
+        flow.setup();
     }
     catch (const std::exception& err)
     {
-        console::error(
-            "FATALITY: Cannot start service thread: %s %s\n", typeid(err).name(),
-            err.what()
-        );
-        pleaseStop = true;
-        runner.join();
+        console::error("Service setup has failed: {}.", err.what());
         return -1;
     }
 
-    try
+    std::jthread runner([&flow]() { supervise(flow); });
+
+    while (!super.stop_requested())
     {
-        while (!pleaseStop && flow.isRunning())
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds(SUPERVISOR_CYCLE));
-        }
-    }
-    catch (const std::exception& err)
-    {
-        console::error(
-            "FATALITY: Something horrible happened: %s %s\n", typeid(err).name(),
-            err.what()
-        );
+        std::this_thread::sleep_for(std::chrono::milliseconds(SUPERVISOR_CYCLE));
     }
 
-    if (flow.isRunning())
-    {
-        flow.stop();
-    }
-
-    // exit supervisor context
-    runner.join();
     (void)std::signal(SIGINT, prevIntH);
     (void)std::signal(SIGTERM, prevTermH);
 
-    console::info("Service and monitor closed gracefully.\n");
     return 0;
 }

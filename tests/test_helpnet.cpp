@@ -13,7 +13,8 @@ TEST(HelpNet, can_list_interfaces)
     auto interfaces = helpnet::listInterfaces();
 
     EXPECT_FALSE(interfaces.empty());
-    for (const auto& intf : interfaces) {
+    for (const auto& intf : interfaces)
+    {
         EXPECT_FALSE(intf.name.empty());
         EXPECT_FALSE(intf.mac.empty());
     }
