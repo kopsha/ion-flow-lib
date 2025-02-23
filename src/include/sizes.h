@@ -2,4 +2,4 @@
 
 #include <cstddef>
 
-constexpr size_t BUFFER_SIZE = 1000;
+constexpr size_t BUFFER_SIZE = 4096;

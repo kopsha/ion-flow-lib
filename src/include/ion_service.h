@@ -1,45 +1,38 @@
 #pragma once
 
-#include "sticky_socket.h"
+#include "ioi.h"
+#include "sticky_engine.h"
 
 #include <atomic>
-#include <cstddef>
-#include <memory>
 #include <thread>
-#include <unordered_map>
-#include <vector>
 
-class IonService {
-public:
-    IonService();
+class IonService
+{
+  public:
+    IonService(const IoIntf& useIo);
     ~IonService();
 
-    // enforce strict references
+    // bad luck
     IonService(const IonService&) = delete;
+    IonService& operator=(const IonService&) = delete;
     IonService(IonService&&) = delete;
-    auto operator=(const IonService&) -> IonService& = delete;
-    auto operator=(IonService&&) -> IonService& = delete;
+    IonService& operator=(IonService&&) = delete;
 
     // actions
     void start();
     void stop();
     void resetHealth();
 
-    auto attach(std::unique_ptr<StickySocket> skt) -> int;
-    auto detach(int descriptor) -> std::unique_ptr<StickySocket>;
-
     // inspectors
-    auto isRunning() const -> bool;
-    auto isHealthy() const -> bool;
-    auto connectionsCount() const -> size_t;
+    [[nodiscard]] auto isRunning() const -> bool;
+    [[nodiscard]] auto isHealthy() const -> bool;
 
-private:
+  protected:
     void loop();
-    auto rebuild_poll_params() const -> std::vector<struct pollfd>;
 
-    // members
+  private:
     std::atomic<bool> healthy;
     std::atomic<bool> running;
     std::thread worker;
-    std::unordered_map<int, std::unique_ptr<StickySocket>> connections;
+    StickyEngine engine;
 };

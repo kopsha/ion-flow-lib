@@ -1,8 +1,7 @@
 #include "helpnet.h"
-#include "logs.h"
+#include "console.h"
 
 #include <array>
-#include <bitset>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -10,7 +9,6 @@
 #include <vector>
 
 #include <dirent.h>
-#include <sys/poll.h>
 #include <unistd.h>
 #ifdef __USE_POSIX
   #include <bits/posix1_lim.h>
@@ -18,19 +16,22 @@
 
 namespace fs = std::filesystem;
 
-namespace {
+namespace
+{
 
 auto fromFile(const fs::path& addrpath) -> std::string
 {
     std::ifstream file(addrpath);
-    if (!file.is_open()) {
-        log_error("Cannot open {}.\n", addrpath.string());
+    if (!file.is_open())
+    {
+        console::error("Cannot open {}.", addrpath.string());
         return {};
     }
 
     std::string address;
-    if (!std::getline(file, address)) {
-        log_error("Cannot read {}.\n", addrpath.string());
+    if (!std::getline(file, address))
+    {
+        console::error("Cannot read {}.", addrpath.string());
         return {};
     }
     return std::move(address);
@@ -38,15 +39,17 @@ auto fromFile(const fs::path& addrpath) -> std::string
 
 } // anonymous namespace
 
-namespace helpnet {
+namespace helpnet
+{
 
 auto readHostname() -> std::string
 {
     std::array<char, HOST_NAME_MAX + 1> hostname {};
 
     const int err = gethostname(hostname.data(), HOST_NAME_MAX);
-    if (err < 0) {
-        log_error("Cannot read hostname.\n");
+    if (err < 0)
+    {
+        console::error("Cannot read hostname.");
         return std::move(std::string());
     }
     hostname[HOST_NAME_MAX] = '\0';
@@ -59,17 +62,21 @@ auto listInterfaces() -> std::vector<Interface>
     std::vector<Interface> interfaces;
     const fs::path netDir { "/sys/class/net" };
 
-    if (!fs::exists(netDir) || !fs::is_directory(netDir)) {
-        log_error("Directory {} is not accessible.\n", netDir.string());
+    if (!fs::exists(netDir) || !fs::is_directory(netDir))
+    {
+        /*console::error("Directory {} is not accessible.", netDir.string());*/
         return std::move(interfaces);
     }
 
-    for (const auto& entry : fs::directory_iterator(netDir)) {
-        if (entry.is_directory() || entry.is_symlink()) {
+    for (const auto& entry : fs::directory_iterator(netDir))
+    {
+        if (entry.is_directory() || entry.is_symlink())
+        {
             const fs::path address = entry.path() / "address";
-            log_info("Checking {}\n", address.string());
-            if (fs::exists(address)) {
-                struct Interface intf {
+            if (fs::exists(address))
+            {
+                struct Interface intf
+                {
                     .name = entry.path().filename().string(), .mac = fromFile(address),
                 };
 
@@ -81,29 +88,20 @@ auto listInterfaces() -> std::vector<Interface>
     return std::move(interfaces);
 }
 
-void log_revents(short int revents)
+auto guessMacAddress() -> std::string
 {
-    log_debug(
-        "Revents (0b%s):\n", std::bitset<sizeof(revents) * 2>(revents).to_string().c_str()
-    );
-
-    if (revents & POLLIN) {
-        log_debug("  POLLIN: Data to read\n");
+    auto interfaces = listInterfaces();
+    std::string result;
+    for (const auto& intf : interfaces)
+    {
+        console::info("netw_if: {} @ {}", intf.name, intf.mac);
+        if (intf.name != "lo")
+        {
+            result = intf.mac;
+            break;
+        }
     }
-    if (revents & POLLPRI) {
-        log_debug("  POLLPRI: Urgent data to read\n");
-    }
-    if (revents & POLLOUT) {
-        log_debug("  POLLOUT: Ready for output\n");
-    }
-    if (revents & POLLERR) {
-        log_debug("  POLLERR: Error condition\n");
-    }
-    if (revents & POLLHUP) {
-        log_debug("  POLLHUP: Hang up\n");
-    }
-    if (revents & POLLNVAL) {
-        log_debug("  POLLNAL: Invalid request\n");
-    }
+    return std::move(result);
 }
+
 } // namespace helpnet

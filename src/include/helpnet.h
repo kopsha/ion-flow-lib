@@ -3,13 +3,15 @@
 #include <string>
 #include <vector>
 
-namespace helpnet {
-struct Interface {
+namespace helpnet
+{
+struct Interface
+{
     std::string name;
     std::string mac;
 };
 
 auto readHostname() -> std::string;
 auto listInterfaces() -> std::vector<Interface>;
-void log_revents(short int revents);
-}
+auto guessMacAddress() -> std::string;
+} // namespace helpnet

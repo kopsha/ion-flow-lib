@@ -4,68 +4,84 @@
 #include <chrono>
 #include <csignal>
 #include <exception>
-#include <memory>
 #include <thread>
-#include <utility>
-
-namespace {
 
 constexpr int SUPERVISOR_CYCLE = 233;
-constexpr int SICP_PORT = 5000;
+static std::atomic<bool> pleaseStop { false };
 
-std::atomic<bool> pleaseStop { false };
-
-void signalHandler(int signal)
+static void signalHandler(int signal)
 {
-    if (signal == SIGINT || signal == SIGTERM) {
-        log_info("Stop signal received (%d)\n", signal);
+    if (signal == SIGINT || signal == SIGTERM)
+    {
+        console::info("Stop signal received ({}).\n", signal);
         pleaseStop = true;
     }
 }
 
-void supervisor(IonService& agent)
+static void supervisor(IonService& service)
 {
-    while (agent.isRunning() && !pleaseStop) {
+    while (!pleaseStop)
+    {
         std::this_thread::sleep_for(std::chrono::seconds(3));
-        if (!agent.isHealthy()) {
-            log_warning("Service appears unresponsive. Restarting...\n");
-            agent.stop();
-            agent.start();
-        } else {
-            agent.resetHealth();
+        if (service.isRunning())
+        {
+            if (!service.isHealthy())
+            {
+                console::warning("Service appears unresponsive. Restarting...\n");
+                service.stop();
+                service.start();
+            }
+            else
+            {
+                service.resetHealth();
+            }
         }
     }
-}
 }
 
 auto main() -> int
 {
-    log_info("Starting service and supervisor threads...");
-    IonService flow;
-
-    // enter supervisor context
     auto prevIntH = std::signal(SIGINT, signalHandler);
     auto prevTermH = std::signal(SIGTERM, signalHandler);
+
+    IoAdapter netw;
+    IonService flow(netw);
+
+    console::info("Enter supervised context.");
     std::thread runner(supervisor, std::ref(flow));
-
-    try {
+    try
+    {
         flow.start(); // as a separate thread
-        std::unique_ptr<IonSession> logic
-            = std::make_unique<IonSession>("localhost", SICP_PORT);
-        flow.attach(std::move(logic));
+    }
+    catch (const std::exception& err)
+    {
+        console::error(
+            "FATALITY: Cannot start service thread: %s %s\n", typeid(err).name(),
+            err.what()
+        );
+        pleaseStop = true;
+        runner.join();
+        return -1;
+    }
 
-        while (!pleaseStop && flow.isRunning()) {
+    try
+    {
+        while (!pleaseStop && flow.isRunning())
+        {
             std::this_thread::sleep_for(std::chrono::milliseconds(SUPERVISOR_CYCLE));
         }
-
-        if (flow.isRunning()) {
-            flow.stop();
-        }
-    } catch (const std::exception& err) {
-        log_error(
+    }
+    catch (const std::exception& err)
+    {
+        console::error(
             "FATALITY: Something horrible happened: %s %s\n", typeid(err).name(),
             err.what()
         );
+    }
+
+    if (flow.isRunning())
+    {
+        flow.stop();
     }
 
     // exit supervisor context
@@ -73,6 +89,6 @@ auto main() -> int
     (void)std::signal(SIGINT, prevIntH);
     (void)std::signal(SIGTERM, prevTermH);
 
-    log_info("Service and monitor closed gracefully.\n");
+    console::info("Service and monitor closed gracefully.\n");
     return 0;
 }
