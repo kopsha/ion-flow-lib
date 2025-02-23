@@ -1,10 +1,7 @@
-#include "console.h"
-#include "ion_service.h"
 #include "ionflow.h"
 
 #include <chrono>
 #include <csignal>
-#include <exception>
 #include <stop_token>
 #include <thread>
 
@@ -57,13 +54,9 @@ int main()
     IoAdapter netw;
     IonService flow(netw);
 
-    try
+    if (flow.setup() < 0)
     {
-        flow.setup();
-    }
-    catch (const std::exception& err)
-    {
-        console::error("Service setup has failed: {}.", err.what());
+        console::error("service configuration failed.");
         return -1;
     }
 

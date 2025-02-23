@@ -1,6 +1,6 @@
-#include "ion_service.h"
 #include "console.h"
 #include "ioi.h"
+#include "ion_service.h"
 
 #include <chrono>
 #include <cstdio>
@@ -30,7 +30,11 @@ void IonService::start(std::stop_token superToken)
     worker = std::jthread([this, superToken]() { loop(superToken); });
 }
 
-void IonService::setup() { CONSOLE_TRACE("pass config someday"); }
+int IonService::setup()
+{
+    CONSOLE_TRACE("pass config someday");
+    return 0;
+}
 
 void IonService::stop()
 {

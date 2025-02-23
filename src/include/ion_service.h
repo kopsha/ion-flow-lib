@@ -19,7 +19,7 @@ class IonService
     IonService& operator=(IonService&&) = delete;
 
     // actions
-    void setup();
+    int setup();
     void start(std::stop_token superToken);
     void stop();
     void resetHealth();
