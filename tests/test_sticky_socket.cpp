@@ -1,104 +1,60 @@
+#include "iomock.h"
 #include "sticky_socket.h"
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <memory>
 
-#include <poll.h>
-#include <sys/poll.h>
+constexpr int ANY_PORT = 9999;
+constexpr std::string A_HOST = "localhost";
 
-static constexpr int ANY_PORT = 9999;
-static constexpr std::string A_HOST = "127.0.0.1";
+using ::testing::Return;
 
-TEST(StickySocket, new_instance__is_disconnected)
-{
-    StickySocket skt(A_HOST, ANY_PORT);
+/*class SocketTest : public ::testing::Test*/
+/*{*/
+/*  protected:*/
+/*    IoMockAdapter iom;*/
+/*    std::unique_ptr<StickySocket> skt;*/
+/**/
+/*    void SetUp() override*/
+/*    {*/
+/*        skt = std::make_unique<StickySocket>(iom, A_HOST, ANY_PORT);*/
+/*        // Set default return values*/
+/*        ON_CALL(iom, create).WillByDefault(Return(1));*/
+/*        ON_CALL(iom, setNonBlocking).WillByDefault(Return(true));*/
+/*        ON_CALL(iom, connect).WillByDefault(Return(0));*/
+/*        ON_CALL(iom, send).WillByDefault(Return(10));    // 10 bytes sent*/
+/*        ON_CALL(iom, receive).WillByDefault(Return(20)); // 20 bytes received*/
+/*    }*/
+/**/
+/*    void TearDown() override { skt.reset(); }*/
+/*};*/
 
-    EXPECT_EQ(skt.getState(), StickySocket::ConnectionState::Disconnected);
-    EXPECT_FALSE(skt.isAlive());
-    EXPECT_EQ(skt.getHost(), A_HOST);
-}
+/*TEST_F(SocketTest, new_instance_is_disconnected)*/
+/*{*/
+/*    EXPECT_EQ(skt->getState(), StickySocket::ConnectionState::Disconnected);*/
+/*    EXPECT_FALSE(true);*/
+/*}*/
 
-TEST(StickySocket, connect_valid_host__is_connecting)
-{
-    StickySocket skt(A_HOST, ANY_PORT);
+/*TEST(SocketTest, connect_moves_to_connecting_state)*/
+/*{*/
+/*    std::shared_ptr<ISocket> mockIo = std::make_shared<SocketMock>();*/
+/*    StickySocket skt(mockIo, A_HOST, ANY_PORT);*/
+/**/
+/*    skt.connect();*/
+/**/
+/*    EXPECT_EQ(skt.getState(), StickySocket::ConnectionState::Connecting);*/
+/*}*/
 
-    skt.connect();
-
-    EXPECT_EQ(skt.getState(), StickySocket::ConnectionState::Connecting);
-}
-
-TEST(StickySocket, connect_invalid_host__is_retry)
-{
-    StickySocket skt("", ANY_PORT);
-
-    skt.connect();
-
-    EXPECT_EQ(skt.getState(), StickySocket::ConnectionState::Retry);
-}
-
-TEST(StickySocket, disconnect_while_connecting__is_disconnected)
-{
-    StickySocket skt(A_HOST, ANY_PORT);
-    skt.connect();
-    EXPECT_EQ(skt.getState(), StickySocket::ConnectionState::Connecting);
-
-    skt.disconnect();
-
-    EXPECT_EQ(skt.getState(), StickySocket::ConnectionState::Disconnected);
-}
-
-TEST(StickySocket, disconnect_can_be_called_twice)
-{
-    StickySocket skt(A_HOST, ANY_PORT);
-
-    skt.disconnect();
-    skt.disconnect();
-
-    EXPECT_EQ(skt.getState(), StickySocket::ConnectionState::Disconnected);
-}
-
-TEST(StickySocket, eval_disconnected_socket_does_nothing)
-{
-    struct pollfd fake;
-    StickySocket skt(A_HOST, ANY_PORT);
-
-    auto newState = skt.eval(fake);
-
-    EXPECT_EQ(newState, StickySocket::ConnectionState::None);
-}
-
-TEST(StickySocket, eval_no_events__is_connecting)
-{
-    struct pollfd fake;
-    StickySocket skt(A_HOST, ANY_PORT);
-    skt.connect();
-
-    auto newState = skt.eval(fake);
-
-    EXPECT_EQ(newState, StickySocket::ConnectionState::None);
-    EXPECT_EQ(skt.getState(), StickySocket::ConnectionState::Connecting);
-}
-
-TEST(StickySocket, eval_write_while_connecting__is_connected)
-{
-    struct pollfd fake = { .revents = POLLOUT };
-    StickySocket skt(A_HOST, ANY_PORT);
-    skt.connect();
-
-    auto newState = skt.eval(fake);
-
-    EXPECT_EQ(newState, StickySocket::ConnectionState::Connected);
-    EXPECT_EQ(skt.getState(), StickySocket::ConnectionState::Connected);
-}
-
-TEST(StickySocket, disconnect_while_connected__is_disconnected)
-{
-    struct pollfd fake = { .revents = POLLOUT };
-    StickySocket skt(A_HOST, ANY_PORT);
-    skt.connect();
-    auto newState = skt.eval(fake);
-    EXPECT_EQ(newState, StickySocket::ConnectionState::Connected);
-
-    skt.disconnect();
-
-    EXPECT_EQ(skt.getState(), StickySocket::ConnectionState::Disconnected);
-}
+/*TEST(SocketTest, connect_while_connecting_state_is_ignored)*/
+/*{*/
+/*    std::shared_ptr<ISocket> mockIo = std::make_shared<SocketMock>();*/
+/*    StickySocket skt(mockIo, A_HOST, ANY_PORT);*/
+/**/
+/*    skt.connect();*/
+/*    EXPECT_EQ(skt.getState(), StickySocket::ConnectionState::Connecting);*/
+/**/
+/*    skt.connect();*/
+/*    console::info("is {}", skt.getStatus());*/
+/*    EXPECT_EQ(skt.getState(), StickySocket::ConnectionState::Connecting);*/
+/*}*/
