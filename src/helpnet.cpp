@@ -75,9 +75,9 @@ auto listInterfaces() -> std::vector<Interface>
             const fs::path address = entry.path() / "address";
             if (fs::exists(address))
             {
-                struct Interface intf
-                {
-                    .name = entry.path().filename().string(), .mac = fromFile(address),
+                struct Interface intf {
+                    .name = entry.path().filename().string(),
+                    .mac = fromFile(address),
                 };
 
                 interfaces.push_back(intf);

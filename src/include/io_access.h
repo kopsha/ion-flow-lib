@@ -22,8 +22,8 @@ class IoAdapter : public IoIntf
         return ::socket(domain, type, protocol);
     };
 
-    auto
-    connect(int sockfd, const struct sockaddr* addr, socklen_t len) const -> int override
+    auto connect(int sockfd, const struct sockaddr* addr, socklen_t len) const
+        -> int override
     {
         return ::connect(sockfd, addr, len);
     };
@@ -40,14 +40,15 @@ class IoAdapter : public IoIntf
         return ::recv(sockfd, buf, len, flags);
     };
 
-    auto getsockopt(int sockfd, int level, int optname, void* optval, socklen_t* optlen)
-        const -> int override
+    auto
+    getsockopt(int sockfd, int level, int optname, void* optval, socklen_t* optlen) const
+        -> int override
     {
         return ::getsockopt(sockfd, level, optname, optval, optlen);
     };
 
-    [[nodiscard]] auto
-    poll(struct pollfd* fds, nfds_t count, int timeout) const -> int override
+    [[nodiscard]] auto poll(struct pollfd* fds, nfds_t count, int timeout) const
+        -> int override
     {
         return ::poll(fds, count, timeout);
     };

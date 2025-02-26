@@ -16,11 +16,11 @@ class IoIntf
 
     virtual auto inet_pton(int family, const char* address, void* buf) const -> int = 0;
     virtual auto socket(int domain, int type, int protocol) const -> int = 0;
-    virtual auto
-    connect(int sockfd, const struct sockaddr* addr, socklen_t len) const -> int = 0;
+    virtual auto connect(int sockfd, const struct sockaddr* addr, socklen_t len) const
+        -> int = 0;
     virtual auto close(int sockfd) const -> int = 0;
-    virtual auto
-    send(int sockfd, const void* buf, size_t len, int flags) const -> size_t = 0;
+    virtual auto send(int sockfd, const void* buf, size_t len, int flags) const
+        -> size_t = 0;
     virtual auto recv(int sockfd, void* buf, size_t len, int flags) const -> size_t = 0;
     virtual auto
     getsockopt(int sockfd, int level, int optname, void* optval, socklen_t* optlen) const
