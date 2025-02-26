@@ -24,15 +24,8 @@ StickyEngine::~StickyEngine()
 {
     for (auto& skt : connections)
     {
-        skt.disconnect();
+        skt->disconnect();
     }
-}
-
-auto StickyEngine::makeSocket(std::string host, uint16_t port) -> StickySocket&
-{
-    auto& skt = connections.emplace_back(io, std::move(host), port);
-    responses.reserve(connections.size());
-    return skt;
 }
 
 void StickyEngine::rebuild_poll_params()
@@ -44,7 +37,7 @@ void StickyEngine::rebuild_poll_params()
         [](const auto& skt)
     {
         return pollfd {
-            .fd = skt.getDescriptor(),
+            .fd = skt->getDescriptor(),
             .events = POLLIN | POLLPRI | POLLOUT,
             .revents = 0,
         };
@@ -56,9 +49,9 @@ int StickyEngine::poll(int duration)
 {
     for (auto& skt : connections)
     {
-        if (skt.getState() == EasySocketIntf::ConnectionState::Disconnected)
+        if (skt->getState() == EasySocketIntf::ConnectionState::Disconnected)
         {
-            skt.reconnect();
+            skt->reconnect();
         }
     }
 
@@ -70,11 +63,11 @@ int StickyEngine::poll(int duration)
         {
             const auto& response = responses.at(i);
             auto& skt = connections.at(i);
-            if (skt.getState() != EasySocketIntf::ConnectionState::Disconnected)
+            if (skt->getState() != EasySocketIntf::ConnectionState::Disconnected)
             {
-                if (!skt.eval(response))
+                if (!skt->eval(response))
                 {
-                    skt.step();
+                    skt->step();
                 }
             }
         }

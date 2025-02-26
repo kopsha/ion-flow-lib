@@ -1,5 +1,6 @@
 #include "console.h"
 #include "ioi.h"
+#include "sticky_socket.h"
 #include "ion_service.h"
 
 #include <chrono>
@@ -50,8 +51,8 @@ void IonService::onEntry()
 {
     CONSOLE_TRACE("soon");
 
-    auto& ref = engine.makeSocket("127.0.0.1", 5000);
-    ref.connect();
+    auto& pSock = engine.makeSocket<StickySocket>("127.0.0.1", 5000);
+    pSock.connect();
 }
 
 void IonService::onExit() { CONSOLE_TRACE("just now"); }
