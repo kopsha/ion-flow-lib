@@ -1,7 +1,7 @@
+#include "ion_service.h"
 #include "console.h"
 #include "ioi.h"
 #include "sticky_socket.h"
-#include "ion_service.h"
 
 #include <chrono>
 #include <cstdio>

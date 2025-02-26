@@ -3,18 +3,14 @@
 #include "ioi.h"
 #include "sticky_socket.h"
 
+#include <cstdint>
 #include <span>
 #include <string>
-#include <cstdint>
 
 class IonSession : public StickySocket
 {
   public:
-    IonSession(
-        const IoIntf& useIo,
-        std::string host,
-        uint16_t port
-    );
+    IonSession(const IoIntf& useIo, std::string host, uint16_t port);
     ~IonSession() override;
 
     // notifications

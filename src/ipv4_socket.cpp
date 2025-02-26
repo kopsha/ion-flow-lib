@@ -129,9 +129,9 @@ auto IPv4Socket::connect() -> bool
     }
 
     // validate server IP address
-    struct sockaddr_in serverAddr
-    {
-        .sin_family = AF_INET, .sin_port = htons(port),
+    struct sockaddr_in serverAddr {
+        .sin_family = AF_INET,
+        .sin_port = htons(port),
         .sin_addr = { .s_addr = INADDR_ANY },
     };
 
