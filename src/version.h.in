@@ -2,5 +2,5 @@
 #include <string>
 
 namespace ionflow {
-constexpr std::string version { "@LIB_VERSION@" };
+constexpr std::string_view version { "@LIB_VERSION@" };
 }
