@@ -9,7 +9,7 @@ include(GoogleTest)
 
 file(GLOB TEST_SOURCES "*.cpp")
 add_executable(ionFlowTests ${TEST_SOURCES})
-target_link_libraries(ionFlowTests PRIVATE gtest_main gmock ionFlowLib)
+target_link_libraries(ionFlowTests PRIVATE gtest_main gmock IonFlows)
 target_include_directories(ionFlowTests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../src/include)
 gtest_discover_tests(ionFlowTests)
 

@@ -1,4 +1,8 @@
-add_library(ionFlowLib STATIC)
+add_library(IonFlows STATIC)
+set_property(TARGET IonFlows PROPERTY POSITION_INDEPENDENT_CODE ON)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    target_compile_options(IonFlows PRIVATE -fexperimental-library)
+endif()
 
 # lets keep this tidy
 find_program(CLANG_TIDY_CLI "clang-tidy")
@@ -14,9 +18,9 @@ configure_file("${CMAKE_SOURCE_DIR}/src/version.h.in"
                "${PROJECT_BINARY_DIR}/include/version.h" @ONLY)
 
 file(GLOB ION_SOURCES "*.cpp")
-target_sources(ionFlowLib PRIVATE ${ION_SOURCES})
+target_sources(IonFlows PRIVATE ${ION_SOURCES})
 target_include_directories(
-    ionFlowLib
+    IonFlows
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
            $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
            $<INSTALL_INTERFACE:include/ionflow>)
@@ -25,14 +29,14 @@ target_include_directories(
 if(ENABLE_COVERAGE)
     message(STATUS "Building for coverage...")
     target_compile_options(
-        ionFlowLib PRIVATE -O0 -fprofile-generate -fno-exceptions -fno-inline
+        IonFlows PRIVATE -O0 -fprofile-generate -fno-exceptions -fno-inline
                            -coverage)
-    target_link_options(ionFlowLib PRIVATE -coverage)
+    target_link_options(IonFlows PRIVATE -coverage)
 endif()
 
 # Install rules for the library
 install(
-    TARGETS ionFlowLib
+    TARGETS IonFlows
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin)
