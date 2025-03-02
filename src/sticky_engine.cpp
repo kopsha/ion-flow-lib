@@ -2,7 +2,6 @@
 #include "console.h"
 #include "easy_socket.h"
 #include "ioi.h"
-#include "sticky_socket.h"
 
 #include <algorithm>
 #include <cstddef>

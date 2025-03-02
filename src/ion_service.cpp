@@ -51,7 +51,7 @@ void IonService::onEntry()
 {
     CONSOLE_TRACE("soon");
 
-    auto& pSock = engine.makeSocket<StickySocket>("127.0.0.1", 5000);
+    auto& pSock = engine.makeSocket<StickySocket>("10.0.2.2", 5000);
     pSock.connect();
 }
 
